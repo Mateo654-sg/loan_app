@@ -243,6 +243,40 @@ Todas las pantallas consumen `usePalette()` → `makeStyles(palette)`; los fondo
 
 Inputs etiquetados para lectores de pantalla (`accessibilityLabel/Hint`) y acciones de solo-icono anunciadas ("Cancel transaction"). Dashboard usa skeleton boxes mientras carga.
 
+## Instalar la app en tu teléfono (Android)
+
+> Expo Go **no es compatible** con este proyecto (SDK 57 > SDK soportado por la app de tiendas). Usa una de estas vías:
+
+### Opción rápida — navegador del teléfono (sin instalar nada)
+
+1. Obtén la IP LAN de tu PC (`ip addr` / `ipconfig`).
+2. En `mobile/.env`: `EXPO_PUBLIC_API_BASE_URL=http://<IP-PC>:8000/api/v1`
+3. Backend corriendo y puerto 8000 accesible desde el teléfono (misma red Wi‑Fi; revisa firewall).
+4. `npx expo start --port 8081` y abre en el navegador del teléfono: `http://<IP-PC>:8081`
+
+### APK instalable con EAS Build (recomendado para uso diario)
+
+Requiere cuenta gratuita en expo.dev:
+
+```bash
+npm install -g eas-cli
+eas login
+cd mobile
+
+# apunta al backend alcanzable desde tu teléfono:
+#   Android: http://<IP-PC>:8000/api/v1   (o un backend desplegado)
+eas build -p android --profile preview
+```
+
+Al terminar, EAS entrega un enlace para descargar el `.apk`; instálalo en el teléfono ("instalar apps de orígenes desconocidos" si lo pide). El perfil ya está configurado en `eas.json`.
+
+### Alternativa local (requiere Android Studio/SDK)
+
+```bash
+npx expo prebuild            # genera android/
+npx expo run:android         # compila e instala en el dispositivo conectado
+```
+
 ## Pendiente (próxima fase)
 
 Fase 11 — Release v1.0: checklist completo en ROADMAP §15 (seguridad, migraciones, financial engine, módulos móviles, documentación). Decisión registrada: `/reports/*` queda post-v1.0 — `/dashboard` cubre el alcance definido.

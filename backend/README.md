@@ -290,3 +290,4 @@ CORS_ORIGINS=https://<dominios-permitidos>  # vacío = sin orígenes de navegado
 ## Pendiente (próxima fase)
 
 Ninguna para v1.0. Post-release candidatos registrados en DEVELOPMENT_PLAN §10c/§7.
+# Prestamos_backend

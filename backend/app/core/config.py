@@ -3,7 +3,6 @@ from functools import lru_cache
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -31,7 +30,7 @@ class Settings(BaseSettings):
     # Restricted CORS (SECURITY.md §17): comma-separated origins. Empty means
     # no cross-origin browser access is allowed at all; native apps do not
     # need CORS. Never ship "*" for authenticated traffic.
-    cors_origins: str = ""
+    cors_origins: str = "http://localhost:8081"
 
     @model_validator(mode="after")
     def validate_security_settings(self) -> "Settings":
