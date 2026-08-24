@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pocketpal-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pocketpal}
+      POSTGRES_USER: ${POSTGRES_USER:-pocketpal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pocketpal}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pocketpal_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pocketpal -d pocketpal"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pocketpal_pgdata:
