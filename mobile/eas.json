@@ -8,6 +8,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://pci-rover-amendment-gamecube.trycloudflare.com/api/v1"
       }
     },
     "production": {
@@ -15,5 +18,8 @@
         "buildType": "app-bundle"
       }
     }
+  },
+  "cli": {
+    "appVersionSource": "remote"
   }
 }

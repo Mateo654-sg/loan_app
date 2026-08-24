@@ -39,6 +39,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e676e8ef-1105-4b48-b6eb-1694d810f34a"
+      }
+    },
+    "owner": "escotiya"
   }
 }
