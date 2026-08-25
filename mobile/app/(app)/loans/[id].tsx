@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from '@/components/form-input';
 import { Radius, Spacing } from '@/constants/tokens';
@@ -25,6 +25,7 @@ import {
   useReversePayment,
 } from '@/features/loans/queries';
 import type { InstallmentDto, PaymentDto } from '@/features/loans/types';
+import { installmentStatusEs, paymentMethodEs } from '@/utils/labels-es';
 import { formatIsoDateShort, formatMoneyCop, todayIsoDate } from '@/utils/money';
 
 const statusColors = (c: Palette): Record<string, string> => ({
@@ -51,6 +52,7 @@ const METHODS = [
 
 export default function LoanDetailScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
 
 function InstallmentCard({ installment }: { installment: InstallmentDto }) {
@@ -69,7 +71,7 @@ function InstallmentCard({ installment }: { installment: InstallmentDto }) {
             fontSize: 12,
           }}
         >
-          {installment.status}
+          {installmentStatusEs[installment.status] ?? installment.status}
         </Text>
       </View>
       <View style={styles.metricRow}>
@@ -99,12 +101,12 @@ function PaymentCard({ payment, onReverse }: { payment: PaymentDto; onReverse: (
           {formatIsoDateShort(payment.payment_date)} · {formatMoneyCop(payment.amount)}
         </Text>
         <Text style={{ color: isPosted ? c.success : c.danger, fontWeight: '700', fontSize: 12 }}>
-          {payment.status}
+          {payment.status === 'REVERSED' ? 'Reversado' : 'Registrado'}
         </Text>
       </View>
       <Text style={styles.note}>
         LF {formatMoneyCop(payment.allocation.late_fee)} · I{' '}
-        {formatMoneyCop(payment.allocation.interest)} · P{' '}
+        {formatMoneyCop(payment.allocation.interest)} · Cap. {' '}
         {formatMoneyCop(payment.allocation.principal)}
         {parseFloat(payment.allocation.credit) > 0
           ? ` · credit ${formatMoneyCop(payment.allocation.credit)}`
@@ -159,7 +161,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
   if (loan.isError || !loan.data) {
     return (
       <View style={[styles.safeArea, styles.centered]}>
-        <Text style={styles.error}>Could not load this loan.</Text>
+        <Text style={styles.error}>No se pudo cargar este préstamo.</Text>
       </View>
     );
   }
@@ -168,11 +170,11 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
 
   const confirmCancel = () => {
     Alert.alert(
-      'Cancel this loan?',
-      'All records remain in history. Payments against a cancelled loan will be rejected.',
+      '¿Cancelar este préstamo?',
+      'Todos los registros permanecen en el historial. Los pagos sobre un préstamo cancelado serán rechazados.',
       [
-        { text: 'Keep it', style: 'cancel' },
-        { text: 'Cancel loan', style: 'destructive', onPress: () => cancel.mutate(data.id) },
+        { text: 'Conservarlo', style: 'cancel' },
+        { text: 'Cancelar préstamo', style: 'destructive', onPress: () => cancel.mutate(data.id) },
       ],
     );
   };
@@ -207,13 +209,13 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
 
       // Success view with the backend-confirmed allocation (UI_UX.md §43).
       Alert.alert(
-        'Payment registered',
-        `${formatMoneyCop(result.amount)} received.\n\n` +
-          `Late fees: ${formatMoneyCop(result.allocation.late_fee)}\n` +
-          `Interest: ${formatMoneyCop(result.allocation.interest)}\n` +
-          `Principal: ${formatMoneyCop(result.allocation.principal)}` +
+        'Pago registrado',
+        `${formatMoneyCop(result.amount)} recibidos.\n\n` +
+          `Mora: ${formatMoneyCop(result.allocation.late_fee)}\n` +
+          `Interés: ${formatMoneyCop(result.allocation.interest)}\n` +
+          `Capital: ${formatMoneyCop(result.allocation.principal)}` +
           (parseFloat(result.allocation.credit) > 0
-            ? `\nCredit generated: ${formatMoneyCop(result.allocation.credit)}`
+            ? `\nCrédito generado: ${formatMoneyCop(result.allocation.credit)}`
             : ''),
       );
     } catch (error) {
@@ -252,7 +254,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}>
         <View style={styles.headerBox}>
           <View>
             <Text style={styles.name}>{data.client_name}</Text>
@@ -274,12 +276,12 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
 
         {/* Balance breakdown per UI_UX.md §36 — never one opaque debt number */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Outstanding balance</Text>
-          <MetricRow label="Principal" value={formatMoneyCop(data.outstanding_principal)} />
-          <MetricRow label="Interest" value={formatMoneyCop(data.outstanding_interest)} />
-          <MetricRow label="Late fees" value={formatMoneyCop(data.outstanding_late_fees)} />
+          <Text style={styles.sectionTitle}>Saldo pendiente</Text>
+          <MetricRow label="Capital" value={formatMoneyCop(data.outstanding_principal)} />
+          <MetricRow label="Interés" value={formatMoneyCop(data.outstanding_interest)} />
+          <MetricRow label="Mora" value={formatMoneyCop(data.outstanding_late_fees)} />
           <View style={styles.divider} />
-          <MetricRow label="Total outstanding" value={formatMoneyCop(data.total_outstanding)} bold />
+          <MetricRow label="Total pendiente" value={formatMoneyCop(data.total_outstanding)} bold />
         </View>
 
         {data.status !== 'CANCELLED' && parseFloat(data.total_outstanding) > 0 ? (
@@ -288,21 +290,21 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
               style={styles.primaryButton}
               onPress={() => setPaymentFormOpen((open) => !open)}
             >
-              <Text style={styles.primaryButtonText}>Register payment</Text>
+              <Text style={styles.primaryButtonText}>Registrar pago</Text>
             </Pressable>
 
             {paymentFormOpen ? (
               <View style={styles.card}>
                 <FormInput
-                  label="Amount"
+                  label="Monto"
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
                   placeholder="0.00"
-                  hint={`Outstanding: ${formatMoneyCop(data.total_outstanding)}`}
+                  hint={`Pendiente: ${formatMoneyCop(data.total_outstanding)}`}
                 />
                 <FormInput
-                  label="Date (YYYY-MM-DD)"
+                  label="Fecha (AAAA-MM-DD)"
                   value={paymentDate}
                   onChangeText={setPaymentDate}
                   autoCapitalize="none"
@@ -322,10 +324,10 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
                   </View>
                 </View>
                 <FormInput
-                  label="Reference (optional)"
+                  label="Referencia (opcional)"
                   value={reference}
                   onChangeText={setReference}
-                  placeholder="Transfer #12345"
+                  placeholder="Transferencia #12345"
                 />
                 {paymentError ? <Text style={styles.error}>{paymentError}</Text> : null}
                 <Pressable
@@ -336,7 +338,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
                   {registerPayment.isPending ? (
                     <ActivityIndicator color={c.onPrimary} />
                   ) : (
-                    <Text style={styles.submitButtonText}>Confirm payment</Text>
+                    <Text style={styles.submitButtonText}>Confirmar pago</Text>
                   )}
                 </Pressable>
               </View>
@@ -344,7 +346,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
           </>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Installments</Text>
+        <Text style={styles.sectionTitle}>Cuotas</Text>
         {schedule.isPending ? (
           <ActivityIndicator />
         ) : schedule.data ? (
@@ -352,14 +354,14 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
             <InstallmentCard key={installment.id} installment={installment} />
           ))
         ) : (
-          <Text style={styles.error}>Could not load the schedule.</Text>
+          <Text style={styles.error}>No se pudo cargar el plan de cuotas.</Text>
         )}
 
-        <Text style={styles.sectionTitle}>Payment history</Text>
+        <Text style={styles.sectionTitle}>Historial de pagos</Text>
         {payments.isPending ? (
           <ActivityIndicator />
         ) : (payments.data?.items.length ?? 0) === 0 ? (
-          <Text style={styles.note}>No payments registered yet.</Text>
+          <Text style={styles.note}>Aún no hay pagos registrados.</Text>
         ) : (
           (payments.data?.items ?? []).map((payment) => (
             <PaymentCard
@@ -374,22 +376,22 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Reverse payment</Text>
             <FormInput
-              label="Reason (required)"
+              label="Motivo (obligatorio)"
               value={reversalReason}
               onChangeText={setReversalReason}
-              placeholder="e.g. Wrong amount entered"
+              placeholder="p. ej. Monto ingresado por error"
             />
             {reversalError ? <Text style={styles.error}>{reversalError}</Text> : null}
             <View style={styles.row}>
               <Pressable style={[styles.smallButton, styles.flex1]} onPress={() => setReversingId(null)}>
-                <Text>Keep payment</Text>
+                <Text>Conservar pago</Text>
               </Pressable>
               <Pressable
                 style={[styles.smallButton, styles.dangerButton, styles.flex1]}
                 onPress={() => void submitReversal()}
                 disabled={reversePayment.isPending}
               >
-                <Text style={{ color: c.onPrimary }}>Confirm reversal</Text>
+                <Text style={{ color: c.onPrimary }}>Confirmar reversa</Text>
               </Pressable>
             </View>
           </View>
@@ -397,7 +399,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
 
         {data.status !== 'CANCELLED' ? (
           <Pressable style={styles.deactivateButton} onPress={confirmCancel}>
-            <Text style={styles.deactivateText}>Cancel loan</Text>
+            <Text style={styles.deactivateText}>Cancelar préstamo</Text>
           </Pressable>
         ) : null}
       </ScrollView>

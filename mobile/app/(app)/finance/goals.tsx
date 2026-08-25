@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from '@/components/form-input';
 import { Radius, Spacing } from '@/constants/tokens';
@@ -18,6 +18,7 @@ import { formatMoneyCop, todayIsoDate } from '@/utils/money';
 
 export default function GoalsScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
   const goals = useGoals();
   const createGoal = useCreateGoal();
@@ -129,7 +130,7 @@ export default function GoalsScreen() {
           {contributionFor === goal.id ? (
             <View style={styles.contributionBox}>
               <FormInput
-                label="Contribution amount"
+                label="Monto del aporte"
                 value={contributionAmount}
                 onChangeText={setContributionAmount}
                 keyboardType="decimal-pad"
@@ -142,7 +143,7 @@ export default function GoalsScreen() {
                 onPress={() => void submitContribution(goal.id)}
                 disabled={addContribution.isPending}
               >
-                <Text style={styles.addButtonText}>Save contribution</Text>
+                <Text style={styles.addButtonText}>Guardar aporte</Text>
               </Pressable>
             </View>
           ) : null}
@@ -153,12 +154,12 @@ export default function GoalsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
         <View style={styles.createBox}>
           <Text style={styles.sectionTitle}>New goal</Text>
-          <FormInput label="Name" value={name} onChangeText={setName} placeholder="Emergency fund" />
+          <FormInput label="Nombre" value={name} onChangeText={setName} placeholder="Emergency fund" />
           <FormInput
-            label="Target amount"
+            label="Monto objetivo"
             value={targetAmount}
             onChangeText={setTargetAmount}
             keyboardType="decimal-pad"
@@ -177,14 +178,14 @@ export default function GoalsScreen() {
             onPress={() => void submitGoal()}
             disabled={createGoal.isPending}
           >
-            <Text style={styles.addButtonText}>Create goal</Text>
+            <Text style={styles.addButtonText}>Crear meta</Text>
           </Pressable>
         </View>
 
         {goals.isPending ? <ActivityIndicator /> : null}
         {!goals.isPending && (goals.data?.length ?? 0) === 0 ? (
           <Text style={styles.empty}>
-            No goals yet. Create your first savings goal above.
+            Aún no tienes metas. Crea tu primera meta de ahorro arriba.
           </Text>
         ) : null}
         {(goals.data ?? []).map(renderGoal)}

@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from '@/components/form-input';
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
@@ -61,6 +61,7 @@ const logoStyles = StyleSheet.create({
 
 export default function LoginScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
   const [serverError, setServerError] = useState<string | null>(null);
   const {
@@ -91,7 +92,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

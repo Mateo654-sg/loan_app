@@ -1,7 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
@@ -75,6 +75,7 @@ function ActionButton({
  */
 export default function HomeScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
 
   const user = useAuthStore((state) => state.user);
@@ -109,7 +110,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Skeleton de carga ────────────────────────────────────────── */}

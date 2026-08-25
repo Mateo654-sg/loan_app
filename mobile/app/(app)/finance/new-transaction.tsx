@@ -3,7 +3,7 @@ import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from '@/components/form-input';
 import { Radius, Spacing } from '@/constants/tokens';
@@ -27,6 +27,7 @@ const METHOD_LABELS: Record<(typeof PAYMENT_METHODS)[number], string> = {
 
 export default function NewTransactionScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
   const [serverError, setServerError] = useState<string | null>(null);
   const createTransaction = useCreateTransaction();
@@ -82,7 +83,7 @@ export default function NewTransactionScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <Stack.Screen options={{ title: selectedType === 'INCOME' ? 'New income' : 'New expense' }} />
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
         <View style={styles.typeRow}>
           <Pressable
             style={[styles.typeButton, selectedType === 'INCOME' && styles.typeIncome]}

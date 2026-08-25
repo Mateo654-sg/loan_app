@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/ui/badge';
 import type { BadgeTone } from '@/components/ui/badge';
@@ -55,6 +55,7 @@ function ClientAvatar({ name, c }: { name: string; c: Palette }) {
 
 export default function LoansScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const loans = useInfiniteLoans(statusFilter === 'ALL' ? {} : { status: statusFilter });

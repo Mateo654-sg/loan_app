@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from '@/components/form-input';
 import { Radius, Spacing } from '@/constants/tokens';
@@ -15,6 +15,7 @@ import { ApiError } from '@/services/api/client';
 
 export default function NewClientScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
   const [serverError, setServerError] = useState<string | null>(null);
   const createClient = useCreateClient();
@@ -56,13 +57,13 @@ export default function NewClientScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
         <Controller
           control={control}
           name="full_name"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label="Full name *"
+              label="Nombre completo *"
               value={value}
               onChangeText={onChange}
               autoCapitalize="words"
@@ -75,7 +76,7 @@ export default function NewClientScreen() {
           name="document_number"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label="Document number"
+              label="Documento"
               value={value ?? ''}
               onChangeText={onChange}
               keyboardType="numbers-and-punctuation"
@@ -89,7 +90,7 @@ export default function NewClientScreen() {
             name="phone"
             render={({ field: { onChange, value } }) => (
               <FormInput
-                label="Phone"
+                label="Teléfono"
                 value={value ?? ''}
                 onChangeText={onChange}
                 keyboardType="phone-pad"
@@ -102,7 +103,7 @@ export default function NewClientScreen() {
             name="alternative_phone"
             render={({ field: { onChange, value } }) => (
               <FormInput
-                label="Alt. phone"
+                label="Tel. alterno"
                 value={value ?? ''}
                 onChangeText={onChange}
                 keyboardType="phone-pad"
@@ -116,7 +117,7 @@ export default function NewClientScreen() {
           name="email"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label="Email"
+              label="Correo"
               value={value ?? ''}
               onChangeText={onChange}
               autoCapitalize="none"
@@ -130,7 +131,7 @@ export default function NewClientScreen() {
           name="address"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label="Address"
+              label="Dirección"
               value={value ?? ''}
               onChangeText={onChange}
               error={errors.address?.message}
@@ -148,10 +149,10 @@ export default function NewClientScreen() {
           {isSubmitting || createClient.isPending ? (
             <ActivityIndicator color={c.onPrimary} />
           ) : (
-            <Text style={styles.submitText}>Save customer</Text>
+            <Text style={styles.submitText}>Guardar cliente</Text>
           )}
         </Pressable>
-        <Text style={styles.hint}>Only the full name is required.</Text>
+        <Text style={styles.hint}>Solo el nombre es obligatorio.</Text>
       </ScrollView>
     </SafeAreaView>
   );

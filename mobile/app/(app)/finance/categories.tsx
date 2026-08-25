@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from '@/components/form-input';
 import { Radius, Spacing } from '@/constants/tokens';
@@ -16,6 +16,7 @@ import { ApiError } from '@/services/api/client';
 
 export default function CategoriesScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
   const categories = useCategories();
   const createCategory = useCreateCategory();
@@ -42,14 +43,14 @@ export default function CategoriesScreen() {
     }
   };
 
-  const confirmDeactivate = (id: string, name: string) => {
+  const confirmDesactivar = (id: string, name: string) => {
     Alert.alert(
-      `Deactivate "${name}"?`,
+      `Desactivar "${name}"?`,
       'It will no longer be selectable for new transactions. Historical records are preserved.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Deactivate',
+          text: 'Desactivar',
           style: 'destructive',
           onPress: () => deactivateCategory.mutate(id),
         },
@@ -66,8 +67,8 @@ export default function CategoriesScreen() {
         {items.map((category) => (
           <View key={category.id} style={styles.row}>
             <Text style={styles.rowTitle}>{category.name}</Text>
-            <Pressable onPress={() => confirmDeactivate(category.id, category.name)} hitSlop={8}>
-              <Text style={styles.deactivate}>Deactivate</Text>
+            <Pressable onPress={() => confirmDesactivar(category.id, category.name)} hitSlop={8}>
+              <Text style={styles.deactivate}>Desactivar</Text>
             </Pressable>
           </View>
         ))}
@@ -78,7 +79,7 @@ export default function CategoriesScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
         <View style={styles.createBox}>
           <Text style={styles.sectionTitle}>New category</Text>
           <View style={styles.typeRow}>
@@ -93,7 +94,7 @@ export default function CategoriesScreen() {
             ))}
           </View>
           <FormInput
-            label="Name"
+            label="Nombre"
             value={newName}
             onChangeText={setNewName}
             placeholder="e.g. Pets"
@@ -104,7 +105,7 @@ export default function CategoriesScreen() {
             onPress={() => void confirmCreate()}
             disabled={createCategory.isPending}
           >
-            <Text style={styles.addButtonText}>Create category</Text>
+            <Text style={styles.addButtonText}>Crear categoría</Text>
           </Pressable>
         </View>
 

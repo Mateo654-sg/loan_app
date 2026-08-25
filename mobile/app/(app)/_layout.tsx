@@ -1,15 +1,17 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
 
-import { FontWeight, Typography } from '@/constants/tokens';
-import { usePalette } from '@/hooks/use-palette';
+import { darkPalette, lightPalette } from '@/theme/palette';
+import { FontWeight, Radius, Spacing, Typography } from '@/constants/tokens';
 
 /**
- * Bottom navigation con íconos SF Symbols y colores del tema.
- * Solo las secciones implementadas están expuestas.
+ * Navegación inferior (PRODUCT_SPECIFICATION.md §31):
+ * Inicio · Finanzas · Préstamos · Clientes · Más.
  */
 export default function AppLayout() {
-  const c = usePalette();
+  const scheme = useColorScheme();
+  const c = scheme === 'dark' ? darkPalette : lightPalette;
 
   return (
     <Tabs
@@ -21,13 +23,13 @@ export default function AppLayout() {
           backgroundColor: c.surface,
           borderTopColor: c.borderSubtle,
           borderTopWidth: 1,
-          paddingTop: 6,
-          paddingBottom: 4,
-          height: 60,
+          height: 64,
+          paddingTop: Spacing.sm,
         },
         tabBarLabelStyle: {
           fontSize: Typography.xs,
           fontWeight: FontWeight.semibold,
+          color: c.text,
           marginTop: 2,
         },
         headerStyle: {
@@ -38,6 +40,7 @@ export default function AppLayout() {
         headerTitleStyle: {
           fontWeight: FontWeight.bold,
           fontSize: Typography.md,
+          color: c.text,
         },
         headerTitleAlign: 'center',
       }}
@@ -76,6 +79,15 @@ export default function AppLayout() {
           title: 'Clientes',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Más',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="options" size={size} color={color} />
           ),
         }}
       />

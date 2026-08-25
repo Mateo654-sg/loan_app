@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -182,6 +182,7 @@ const cardStyles = StyleSheet.create({
  */
 export default function CollectionsScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
   const [filter, setFilter] = useState<CollectionsFilter>('TODAY');
   const today = useTodayCollections();
@@ -190,7 +191,7 @@ export default function CollectionsScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}
         showsVerticalScrollIndicator={false}
       >
         {/* Título + fecha */}

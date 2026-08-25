@@ -1,7 +1,7 @@
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Radius, Spacing } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -18,6 +18,7 @@ import { ApiError } from '@/services/api/client';
 
 export default function ClientDetailScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
 
 function Centered({ children }: { children: React.ReactNode }) {
@@ -110,7 +111,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}>
         <View style={styles.headerBox}>
           <Text style={styles.name}>{data.full_name}</Text>
           <Text
@@ -124,17 +125,17 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Financial summary</Text>
+          <Text style={styles.sectionTitle}>Resumen financiero</Text>
           {summary.isPending ? (
             <ActivityIndicator />
           ) : summary.data ? (
             <>
-              <MetricRow label="Active loans" value={String(summary.data.active_loans)} />
-              <MetricRow label="Total capital lent" value={summary.data.total_capital_lent} />
-              <MetricRow label="Outstanding capital" value={summary.data.outstanding_capital} />
-              <MetricRow label="Total receivable" value={summary.data.total_receivable} />
-              <MetricRow label="Total overdue" value={summary.data.total_overdue} tone="danger" />
-              <Text style={styles.note}>Loan metrics activate when the loan module ships.</Text>
+              <MetricRow label="Préstamos activos" value={String(summary.data.active_loans)} />
+              <MetricRow label="Capital prestado" value={summary.data.total_capital_lent} />
+              <MetricRow label="Capital vigente" value={summary.data.outstanding_capital} />
+              <MetricRow label="Total por cobrar" value={summary.data.total_receivable} />
+              <MetricRow label="Total en mora" value={summary.data.total_overdue} tone="danger" />
+              <Text style={styles.note}>Las métricas de préstamos se activan con el módulo de préstamos.</Text>
             </>
           ) : (
             <Text style={styles.error}>Could not load the summary.</Text>
@@ -142,19 +143,19 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact information</Text>
-          <InfoRow label="Document" value={data.document_number} />
-          <InfoRow label="Phone" value={data.phone} />
-          <InfoRow label="Alt. phone" value={data.alternative_phone} />
-          <InfoRow label="Email" value={data.email} />
-          <InfoRow label="Address" value={data.address} />
-          <InfoRow label="Notes" value={data.notes} />
+          <Text style={styles.sectionTitle}>Información de contacto</Text>
+          <InfoRow label="Documento" value={data.document_number} />
+          <InfoRow label="Teléfono" value={data.phone} />
+          <InfoRow label="Tel. alterno" value={data.alternative_phone} />
+          <InfoRow label="Correo" value={data.email} />
+          <InfoRow label="Dirección" value={data.address} />
+          <InfoRow label="Notas" value={data.notes} />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>References</Text>
+          <Text style={styles.sectionTitle}>Referencias</Text>
           {(references.data ?? []).filter((r) => r.is_active).length === 0 ? (
-            <Text style={styles.note}>No active references.</Text>
+            <Text style={styles.note}>Sin referencias activas.</Text>
           ) : (
             (references.data ?? [])
               .filter((r) => r.is_active)
@@ -171,7 +172,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
           <View style={styles.refForm}>
             <TextInput
               style={styles.input}
-              placeholder="Reference name"
+              placeholder="Nombre de la referencia"
               placeholderTextColor={c.textMuted}
               value={refName}
               onChangeText={setRefName}
@@ -187,7 +188,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
               />
               <TextInput
                 style={[styles.input, styles.flex1]}
-                placeholder="Relationship"
+                placeholder="Parentesco"
                 placeholderTextColor={c.textMuted}
                 value={refRelationship}
                 onChangeText={setRefRelationship}
@@ -199,14 +200,14 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
               onPress={() => void submitReference()}
               disabled={addReference.isPending}
             >
-              <Text style={styles.smallButtonText}>Add reference</Text>
+              <Text style={styles.smallButtonText}>Agregar referencia</Text>
             </Pressable>
           </View>
         </View>
 
         {data.status === 'ACTIVE' ? (
           <Pressable style={styles.deactivateButton} onPress={confirmDeactivate}>
-            <Text style={styles.deactivateText}>Deactivate customer</Text>
+            <Text style={styles.deactivateText}>Desactivar cliente</Text>
           </Pressable>
         ) : null}
 

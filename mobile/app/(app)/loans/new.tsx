@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from '@/components/form-input';
 import { Radius, Spacing } from '@/constants/tokens';
@@ -28,10 +28,33 @@ import { useCreateLoan } from '@/features/loans/queries';
 import { ApiError } from '@/services/api/client';
 import { todayIsoDate } from '@/utils/money';
 
-const AMORTIZATION_LABELS = { FIXED_PRINCIPAL: 'Fixed principal', FRENCH: 'French' } as const;
+const AMORTIZATION_LABELS = { FIXED_PRINCIPAL: 'Capital fijo', FRENCH: 'Francés' } as const;
+
+const PERIOD_ES: Record<string, string> = {
+  ONCE: 'mensual',
+  DAILY: 'diario',
+  WEEKLY: 'semanal',
+  BIWEEKLY: 'quincenal',
+  MONTHLY: 'mensual',
+} as const;
+
+const FREQ_LABELS: Record<string, string> = {
+  ONCE: 'Una vez',
+  DAILY: 'Diaria',
+  WEEKLY: 'Semanal',
+  BIWEEKLY: 'Quincenal',
+  MONTHLY: 'Mensual',
+} as const;
+
+const LATE_FEE_TYPE_LABELS = {
+  FIXED_AMOUNT: 'Fija',
+  PERCENTAGE: '% única',
+  DAILY_PERCENTAGE: '% diaria',
+} as const;
 
 export default function NewLoanScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
 
 function Chip({
@@ -117,7 +140,7 @@ function Chip({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
         <View>
           <Text style={styles.sectionLabel}>Customer</Text>
           {clients.isPending ? (
@@ -144,7 +167,7 @@ function Chip({
           name="principal"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label="Loan amount"
+              label="Monto del préstamo"
               value={value}
               onChangeText={onChange}
               keyboardType="decimal-pad"
@@ -159,7 +182,7 @@ function Chip({
           name="interest_rate"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label={`Interest rate % per ${frequency.toLowerCase()} period`}
+              label={`Tasa % por período ${PERIOD_ES[frequency]}`}
               value={value}
               onChangeText={onChange}
               keyboardType="decimal-pad"
@@ -189,7 +212,7 @@ function Chip({
             {FREQUENCIES.map((freq) => (
               <Chip
                 key={freq}
-                label={freq === 'ONCE' ? 'Once' : freq.charAt(0) + freq.slice(1).toLowerCase()}
+                label={FREQ_LABELS[freq]}
                 active={frequency === freq}
                 onPress={() => setValue('payment_frequency', freq)}
               />
@@ -202,7 +225,7 @@ function Chip({
           name="number_of_installments"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label="Number of installments"
+              label="Número de cuotas"
               value={value}
               onChangeText={onChange}
               keyboardType="number-pad"
@@ -218,7 +241,7 @@ function Chip({
             render={({ field: { onChange, value } }) => (
               <View style={styles.flex1}>
                 <FormInput
-                  label="Start date (YYYY-MM-DD)"
+                  label="Fecha de inicio (AAAA-MM-DD)"
                   value={value}
                   onChangeText={onChange}
                   autoCapitalize="none"
@@ -233,7 +256,7 @@ function Chip({
             render={({ field: { onChange, value } }) => (
               <View style={styles.flex1}>
                 <FormInput
-                  label="First due date"
+                  label="Primera cuota (AAAA-MM-DD)"
                   value={value}
                   onChangeText={onChange}
                   autoCapitalize="none"
@@ -258,7 +281,7 @@ function Chip({
               {(['FIXED_AMOUNT', 'PERCENTAGE', 'DAILY_PERCENTAGE'] as const).map((type) => (
                 <Chip
                   key={type}
-                  label={type === 'FIXED_AMOUNT' ? 'Fixed' : type === 'PERCENTAGE' ? '% once' : '% daily'}
+                  label={LATE_FEE_TYPE_LABELS[type]}
                   active={watch('late_fee_type') === type}
                   onPress={() => setValue('late_fee_type', type)}
                 />
@@ -271,7 +294,7 @@ function Chip({
                 render={({ field: { onChange, value } }) => (
                   <View style={styles.flex1}>
                     <FormInput
-                      label="Value"
+                      label="Valor"
                       value={value ?? ''}
                       onChangeText={onChange}
                       keyboardType="decimal-pad"
@@ -286,7 +309,7 @@ function Chip({
                 render={({ field: { onChange, value } }) => (
                   <View style={styles.flex1}>
                     <FormInput
-                      label="Grace days"
+                      label="Días de gracia"
                       value={value ?? ''}
                       onChangeText={onChange}
                       keyboardType="number-pad"
@@ -308,7 +331,7 @@ function Chip({
           {createLoan.isPending ? (
             <ActivityIndicator color={c.onPrimary} />
           ) : (
-            <Text style={styles.submitText}>Create loan</Text>
+            <Text style={styles.submitText}>Crear préstamo</Text>
           )}
         </Pressable>
       </ScrollView>

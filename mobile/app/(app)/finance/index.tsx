@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -15,21 +15,22 @@ import {
 import type { TransactionDto } from '@/features/finance/types';
 import { formatIsoDateShort, formatMoneyCop } from '@/utils/money';
 
-type TypeFilter = 'ALL' | 'INCOME' | 'EXPENSE';
+type TypeFilter = 'TODOS' | 'INGRESOS' | 'GASTOS';
 
 const FILTER_LABELS: Record<TypeFilter, string> = {
-  ALL: 'Todo',
-  INCOME: 'Ingresos',
-  EXPENSE: 'Gastos',
+  TODOS: 'Todos',
+  INGRESOS: 'Ingresos',
+  GASTOS: 'Gastos',
 };
 
 const PAGE_SIZE = 20;
 
 export default function FinanceScreen() {
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
-  const filters = typeFilter === 'ALL' ? {} : { type: typeFilter };
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('TODOS');
+  const filters = typeFilter === 'TODOS' ? {} : { type: (typeFilter === 'INGRESOS' ? 'INCOME' : 'EXPENSE') as 'INCOME' | 'EXPENSE' };
 
   const summary = useFinanceSummary();
   const transactions = useInfiniteTransactions({ ...filters, page_size: PAGE_SIZE });
@@ -200,7 +201,7 @@ export default function FinanceScreen() {
 
         {/* Filtros */}
         <View style={styles.filterRow}>
-          {(['ALL', 'INCOME', 'EXPENSE'] as TypeFilter[]).map((value) => (
+          {(['TODOS', 'INGRESOS', 'GASTOS'] as TypeFilter[]).map((value) => (
             <Pressable
               key={value}
               style={({ pressed }) => [
