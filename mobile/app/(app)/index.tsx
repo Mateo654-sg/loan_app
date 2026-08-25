@@ -1,11 +1,11 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { Radius, Spacing } from '@/constants/tokens';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
+import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
 import { useDashboard } from '@/features/dashboard/queries';
@@ -13,67 +13,74 @@ import { logoutUser } from '@/services/auth/auth-service';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatMoneyCop } from '@/utils/money';
 
-/**
- * Dashboard (UI_UX.md §6–13): actionable financial information first.
- * Every value comes from the consolidated backend read-model; nothing is
- * computed client-side. Data refetches on every focus so the numbers stay
- * current after financial mutations done elsewhere.
- */
-export default function HomeScreen() {
-  const c = usePalette();
-  const styles = makeStyles(c);
+// ─── Subcomponentes ───────────────────────────────────────────────────────────
 
-function SkeletonBox({
-  height,
-  flex,
-}: {
-  height: number;
-  flex?: boolean;
-}) {
-  return <View style={[styles.skeleton, { height }, flex && { flexGrow: 1 }]} />;
-}
 function MetricCard({
   label,
   value,
   tone = 'neutral',
+  c,
 }: {
   label: string;
   value: string;
   tone?: 'neutral' | 'success' | 'danger';
+  c: Palette;
 }) {
-  const color =
+  const valueColor =
     tone === 'success' ? c.success : tone === 'danger' ? c.danger : c.text;
-
+  const styles = makeStyles(c);
   return (
     <View style={styles.metricCard}>
       <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={[styles.metricValue, { color }]} numberOfLines={1}>
+      <Text style={[styles.metricValue, { color: valueColor }]} numberOfLines={1}>
         {value}
       </Text>
     </View>
   );
 }
-function ActionLink({
+
+function ActionButton({
   href,
   label,
+  emoji,
+  c,
 }: {
   href: string;
   label: string;
+  emoji: string;
+  c: Palette;
 }) {
+  const styles = makeStyles(c);
   return (
     <Link href={href as never} asChild>
-      <Pressable style={styles.actionButton}>
+      <Pressable
+        style={({ pressed }) => [
+          styles.actionButton,
+          pressed && { opacity: 0.75 },
+        ]}
+      >
+        <Text style={styles.actionEmoji}>{emoji}</Text>
         <Text style={styles.actionText}>{label}</Text>
       </Pressable>
     </Link>
   );
 }
+
+// ─── Pantalla principal ───────────────────────────────────────────────────────
+
+/**
+ * Dashboard (información financiera accionable primero).
+ * Los datos vienen del read-model del backend; nada se calcula en cliente.
+ * Se refresca en cada focus para mantenerse actualizado.
+ */
+export default function HomeScreen() {
+  const c = usePalette();
+  const styles = makeStyles(c);
+
   const user = useAuthStore((state) => state.user);
   const dashboard = useDashboard();
   const queryClient = useQueryClient();
 
-  // Financial mutations elsewhere invalidate ['dashboard']; refetching on
-  // focus also covers changes made outside the app session.
   useFocusEffect(
     useCallback(() => {
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -83,106 +90,199 @@ function ActionLink({
   const firstName = (user?.full_name ?? '').split(' ')[0];
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.greeting}>
-          {firstName ? `Hello, ${firstName}` : 'PocketPal'}
-        </Text>
-        {dashboard.data ? (
-          <Text style={styles.businessDate}>
-            Business date: {dashboard.data.business_date}
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>
+            {firstName ? `Hola, ${firstName} 👋` : 'PocketPal'}
           </Text>
-        ) : null}
+          {dashboard.data ? (
+            <Text style={styles.businessDate}>
+              {dashboard.data.business_date}
+            </Text>
+          ) : null}
+        </View>
+        <View style={[styles.logoMark, { backgroundColor: c.primary }]}>
+          <Text style={styles.logoChar}>₱</Text>
+        </View>
+      </View>
 
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Skeleton de carga ────────────────────────────────────────── */}
         {dashboard.isPending ? (
-          <View style={styles.skeletonGroup} accessibilityLabel="Loading dashboard">
-            <SkeletonBox height={92} />
+          <SkeletonGroup gap={Spacing.sm}>
+            <Skeleton height={110} />
             <View style={styles.rowGap}>
-              <SkeletonBox height={64} flex />
-              <SkeletonBox height={64} flex />
+              <Skeleton height={72} width="48%" />
+              <Skeleton height={72} width="48%" />
             </View>
-            <SkeletonBox height={64} />
-            <SkeletonBox height={56} />
-          </View>
-        ) : dashboard.isError || !dashboard.data ?(
-          <>
-            <Text style={styles.error}>Could not load your dashboard.</Text>
-            <Pressable style={styles.retryButton} onPress={() => void dashboard.refetch()}>
-              <Text style={styles.retryText}>Retry</Text>
+            <View style={styles.rowGap}>
+              <Skeleton height={72} width="48%" />
+              <Skeleton height={72} width="48%" />
+            </View>
+            <Skeleton height={88} />
+            <Skeleton height={52} />
+          </SkeletonGroup>
+        ) : dashboard.isError || !dashboard.data ? (
+          /* ── Error ─────────────────────────────────────────────────── */
+          <View style={styles.errorBox}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorText}>No se pudo cargar el panel.</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.retryButton,
+                pressed && { opacity: 0.75 },
+              ]}
+              onPress={() => void dashboard.refetch()}
+            >
+              <Text style={styles.retryText}>Reintentar</Text>
             </Pressable>
-          </>
+          </View>
         ) : (
           <>
-            {/* Personal finance */}
-            <View style={[styles.heroCard]}>
-              <Text style={styles.heroLabel}>Personal balance</Text>
+            {/* ── Hero: Saldo personal ──────────────────────────────── */}
+            <View style={[styles.heroCard, { backgroundColor: c.primary }]}>
+              <Text style={styles.heroLabel}>Saldo personal</Text>
               <Text style={styles.heroValue}>
                 {formatMoneyCop(dashboard.data.finance.balance)}
               </Text>
               <View style={styles.heroRow}>
-                <Text style={[styles.heroSide, { color: c.success }]}>
-                  +{formatMoneyCop(dashboard.data.finance.monthly_income)} this month
-                </Text>
-                <Text style={[styles.heroSide, { color: c.danger }]}>
-                  −{formatMoneyCop(dashboard.data.finance.monthly_expenses)}
-                </Text>
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatLabel}>↑ Ingresos este mes</Text>
+                  <Text style={[styles.heroStatValue, { color: '#86EFAC' }]}>
+                    {formatMoneyCop(dashboard.data.finance.monthly_income)}
+                  </Text>
+                </View>
+                <View style={[styles.heroStat, styles.heroStatRight]}>
+                  <Text style={styles.heroStatLabel}>↓ Gastos este mes</Text>
+                  <Text style={[styles.heroStatValue, { color: '#FCA5A5' }]}>
+                    {formatMoneyCop(dashboard.data.finance.monthly_expenses)}
+                  </Text>
+                </View>
               </View>
             </View>
 
-            {/* Lending */}
-            <Text style={styles.sectionTitle}>Lending overview</Text>
+            {/* ── Resumen de préstamos ──────────────────────────────── */}
+            <Text style={styles.sectionTitle}>Resumen de préstamos</Text>
             <View style={styles.grid}>
-              <MetricCard label="Total receivable" value={formatMoneyCop(dashboard.data.loans.total_receivable)} />
-              <MetricCard label="Overdue" value={formatMoneyCop(dashboard.data.loans.total_overdue)} tone="danger" />
-              <MetricCard label="Capital lent" value={formatMoneyCop(dashboard.data.loans.total_capital_lent)} />
-              <MetricCard label="Interest collected" value={formatMoneyCop(dashboard.data.loans.collected_interest)} tone="success" />
+              <MetricCard
+                label="Por cobrar"
+                value={formatMoneyCop(dashboard.data.loans.total_receivable)}
+                c={c}
+              />
+              <MetricCard
+                label="Vencido"
+                value={formatMoneyCop(dashboard.data.loans.total_overdue)}
+                tone="danger"
+                c={c}
+              />
+              <MetricCard
+                label="Capital prestado"
+                value={formatMoneyCop(dashboard.data.loans.total_capital_lent)}
+                c={c}
+              />
+              <MetricCard
+                label="Interés cobrado"
+                value={formatMoneyCop(dashboard.data.loans.collected_interest)}
+                tone="success"
+                c={c}
+              />
             </View>
 
-            {/* Today's collections summary with deep link */}
+            {/* ── Cobros de hoy ────────────────────────────────────── */}
             <Link href="/(app)/loans/collections" asChild>
-              <Pressable style={styles.collectionsCard}>
-                <Text style={styles.sectionTitle}>Today's collections</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.collectionsCard,
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <View style={styles.collectionsHeader}>
+                  <Text style={styles.sectionTitle}>Cobros de hoy</Text>
+                  <Text style={[styles.linkHint, { color: c.primary }]}>Ver todos →</Text>
+                </View>
                 <Text style={styles.collectionsLine}>
-                  Expected {formatMoneyCop(dashboard.data.loans.today_collections_expected)} · Pending{' '}
+                  Esperado {formatMoneyCop(dashboard.data.loans.today_collections_expected)}
+                  {' · '}Pendiente{' '}
                   {formatMoneyCop(dashboard.data.loans.today_collections_pending)}
                 </Text>
-                <Text style={styles.linkHint}>Open collections →</Text>
               </Pressable>
             </Link>
 
-            {/* Goals progress */}
+            {/* ── Metas ────────────────────────────────────────────── */}
             {dashboard.data.goals.length > 0 ? (
               <>
-                <Text style={styles.sectionTitle}>Goals</Text>
+                <Text style={styles.sectionTitle}>Metas</Text>
                 {dashboard.data.goals.slice(0, 3).map((goal) => (
                   <View key={goal.id} style={styles.goalCard}>
                     <View style={styles.goalHeader}>
                       <Text style={styles.goalName}>{goal.name}</Text>
-                      <Text style={styles.goalPercent}>{goal.progress_percent}%</Text>
+                      <Text style={[styles.goalPercent, { color: c.primary }]}>
+                        {goal.progress_percent}%
+                      </Text>
                     </View>
                     <View style={styles.progressTrack}>
-                      <View style={[styles.progressFill, { width: `${goal.progress_percent}%` }]} />
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${goal.progress_percent}%` as `${number}%`,
+                            backgroundColor: c.primary,
+                          },
+                        ]}
+                      />
                     </View>
                     <Text style={styles.goalMeta}>
-                      {formatMoneyCop(goal.current_amount)} / {formatMoneyCop(goal.target_amount)}
+                      {formatMoneyCop(goal.current_amount)} /{' '}
+                      {formatMoneyCop(goal.target_amount)}
                     </Text>
                   </View>
                 ))}
               </>
             ) : null}
 
-            {/* Quick actions */}
-            <Text style={styles.sectionTitle}>Quick actions</Text>
+            {/* ── Acciones rápidas ─────────────────────────────────── */}
+            <Text style={styles.sectionTitle}>Acciones rápidas</Text>
             <View style={styles.actionsGrid}>
-              <ActionLink href="/(app)/finance/new-transaction" label="+ Income/Expense" />
-              <ActionLink href="/(app)/clients/new" label="+ Customer" />
-              <ActionLink href="/(app)/loans/new" label="+ Loan" />
-              <ActionLink href="/(app)/finance" label="Finanzas" />
+              <ActionButton
+                href="/(app)/finance/new-transaction"
+                label="Ingreso/Gasto"
+                emoji="💰"
+                c={c}
+              />
+              <ActionButton
+                href="/(app)/clients/new"
+                label="Nuevo cliente"
+                emoji="👤"
+                c={c}
+              />
+              <ActionButton
+                href="/(app)/loans/new"
+                label="Nuevo préstamo"
+                emoji="📋"
+                c={c}
+              />
+              <ActionButton
+                href="/(app)/finance"
+                label="Finanzas"
+                emoji="📊"
+                c={c}
+              />
             </View>
 
-            {/* Session exit lives here until the Settings section ships */}
-            <Pressable style={styles.logoutLink} onPress={() => void logoutUser()}>
-              <Text style={styles.logoutText}>Log out</Text>
+            {/* ── Cerrar sesión ────────────────────────────────────── */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.logoutButton,
+                pressed && { opacity: 0.6 },
+              ]}
+              onPress={() => void logoutUser()}
+            >
+              <Text style={styles.logoutText}>Cerrar sesión</Text>
             </Pressable>
           </>
         )}
@@ -190,96 +290,221 @@ function ActionLink({
     </SafeAreaView>
   );
 }
+
+// ─── Estilos ──────────────────────────────────────────────────────────────────
+
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: c.background },
-  container: { padding: Spacing.md, gap: Spacing.sm },
-  greeting: { fontSize: 24, fontWeight: '700' },
-  businessDate: { fontSize: 12, opacity: c.mutedOpacity },
-  heroCard: {
-    gap: 4,
-    padding: Spacing.md,
-    borderRadius: Radius.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-  },
-  heroLabel: { fontSize: 13, opacity: c.mutedOpacity },
-  heroValue: { fontSize: 30, fontWeight: '800' },
-  heroRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
-  heroSide: { fontSize: 13, fontWeight: '600' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', marginTop: Spacing.xs },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  metricCard: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    borderRadius: Radius.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.sm + 4,
-    gap: 2,
-  },
-  metricLabel: { fontSize: 12, opacity: c.mutedOpacity },
-  metricValue: { fontSize: 15, fontWeight: '800' },
-  collectionsCard: {
-    gap: 2,
-    padding: Spacing.md,
-    borderRadius: Radius.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.primary,
-  },
-  collectionsLine: { fontSize: 13 },
-  linkHint: { fontSize: 12, color: c.primary, fontWeight: '600', marginTop: 2 },
-  goalCard: {
-    gap: 4,
-    padding: Spacing.sm + 4,
-    borderRadius: Radius.card,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-  },
-  goalHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  goalName: { fontSize: 14, fontWeight: '600' },
-  goalPercent: { fontSize: 12, fontWeight: '700', color: c.primary },
-  progressTrack: {
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: c.primarySoft,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', borderRadius: 999, backgroundColor: c.primary },
-  goalMeta: { fontSize: 11, opacity: c.mutedOpacity },
-  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  actionButton: {
-    flexGrow: 1,
-    borderRadius: Radius.button,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.sm,
-  },
-  actionText: { fontSize: 13, fontWeight: '600' },
-  error: { color: c.danger, textAlign: 'center', paddingVertical: Spacing.md },
-  retryButton: {
-    alignSelf: 'center',
-    borderRadius: Radius.button,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.lg,
-  },
-  retryText: { fontWeight: '600' },
-  logoutLink: { alignItems: 'center', paddingVertical: Spacing.md, marginTop: Spacing.sm },
-  logoutText: { color: c.danger, fontSize: 14 },
-  skeletonGroup: { gap: Spacing.sm },
-  rowGap: { flexDirection: 'row', gap: Spacing.sm },
-  skeleton: {
-    borderRadius: Radius.card,
-    backgroundColor: c.primarySoft,
-    opacity: 0.6,
-    width: '100%',
-  },
-});;
+    safeArea: { flex: 1, backgroundColor: c.background },
+
+    // Header
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.sm,
+    },
+    greeting: {
+      fontSize: Typography.xl,
+      fontWeight: FontWeight.extrabold,
+      color: c.text,
+      letterSpacing: -0.4,
+    },
+    businessDate: {
+      fontSize: Typography.sm,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    logoMark: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoChar: { fontSize: 20, color: '#FFF', fontWeight: '800' },
+
+    // Content
+    container: {
+      padding: Spacing.lg,
+      gap: Spacing.sm,
+      paddingBottom: Spacing.xl,
+    },
+    rowGap: { flexDirection: 'row', gap: Spacing.sm },
+
+    // Hero card (saldo personal)
+    heroCard: {
+      borderRadius: Radius.cardLg,
+      padding: Spacing.lg,
+      gap: Spacing.sm,
+      ...Shadow.lg,
+    },
+    heroLabel: {
+      fontSize: Typography.sm,
+      color: 'rgba(255,255,255,0.75)',
+      fontWeight: FontWeight.semibold,
+      letterSpacing: 0.5,
+    },
+    heroValue: {
+      fontSize: Typography.hero,
+      fontWeight: FontWeight.black,
+      color: '#FFFFFF',
+      letterSpacing: -1,
+    },
+    heroRow: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      marginTop: Spacing.xs,
+      paddingTop: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(255,255,255,0.15)',
+    },
+    heroStat: { flex: 1, gap: 2 },
+    heroStatRight: { alignItems: 'flex-end' },
+    heroStatLabel: {
+      fontSize: Typography.xs,
+      color: 'rgba(255,255,255,0.65)',
+    },
+    heroStatValue: {
+      fontSize: Typography.base,
+      fontWeight: FontWeight.bold,
+    },
+
+    // Sección
+    sectionTitle: {
+      fontSize: Typography.base,
+      fontWeight: FontWeight.bold,
+      color: c.text,
+      marginTop: Spacing.xs,
+      letterSpacing: 0.1,
+    },
+
+    // Metric cards
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    metricCard: {
+      flexBasis: '48%',
+      flexGrow: 1,
+      borderRadius: Radius.card,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      gap: 4,
+      ...Shadow.sm,
+    },
+    metricLabel: {
+      fontSize: Typography.xs,
+      color: c.textMuted,
+      fontWeight: FontWeight.medium,
+    },
+    metricValue: {
+      fontSize: Typography.base,
+      fontWeight: FontWeight.extrabold,
+      color: c.text,
+    },
+
+    // Collections card
+    collectionsCard: {
+      backgroundColor: c.surface,
+      borderRadius: Radius.card,
+      padding: Spacing.md,
+      gap: 6,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
+      ...Shadow.sm,
+    },
+    collectionsHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    collectionsLine: {
+      fontSize: Typography.sm,
+      color: c.textMuted,
+    },
+    linkHint: {
+      fontSize: Typography.sm,
+      fontWeight: FontWeight.bold,
+    },
+
+    // Goals
+    goalCard: {
+      backgroundColor: c.surface,
+      borderRadius: Radius.card,
+      padding: Spacing.md,
+      gap: 8,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
+      ...Shadow.sm,
+    },
+    goalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    goalName: { fontSize: Typography.base, fontWeight: FontWeight.semibold, color: c.text },
+    goalPercent: { fontSize: Typography.sm, fontWeight: FontWeight.bold },
+    progressTrack: {
+      height: 7,
+      borderRadius: 999,
+      backgroundColor: c.primarySoft,
+      overflow: 'hidden',
+    },
+    progressFill: { height: '100%', borderRadius: 999 },
+    goalMeta: { fontSize: Typography.xs, color: c.textMuted },
+
+    // Actions grid
+    actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    actionButton: {
+      flexBasis: '47%',
+      flexGrow: 1,
+      borderRadius: Radius.card,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
+      backgroundColor: c.surface,
+      minHeight: 72,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingHorizontal: Spacing.sm,
+      ...Shadow.sm,
+    },
+    actionEmoji: { fontSize: 24 },
+    actionText: {
+      fontSize: Typography.sm,
+      fontWeight: FontWeight.semibold,
+      color: c.text,
+      textAlign: 'center',
+    },
+
+    // Logout
+    logoutButton: {
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      marginTop: Spacing.sm,
+    },
+    logoutText: {
+      color: c.textMuted,
+      fontSize: Typography.sm,
+      fontWeight: FontWeight.medium,
+    },
+
+    // Error
+    errorBox: {
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.xl,
+    },
+    errorIcon: { fontSize: 40 },
+    errorText: { color: c.danger, textAlign: 'center' },
+    retryButton: {
+      backgroundColor: c.primarySoft,
+      borderRadius: Radius.button,
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.sm + 4,
+    },
+    retryText: {
+      color: c.primary,
+      fontWeight: FontWeight.semibold,
+      fontSize: Typography.base,
+    },
+  });

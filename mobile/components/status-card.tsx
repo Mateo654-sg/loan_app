@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { FontWeight, Radius, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
-import { Radius, Spacing } from '@/constants/tokens';
 import type { Palette } from '@/theme/palette';
 
 interface StatusCardProps {
@@ -11,47 +11,56 @@ interface StatusCardProps {
 }
 
 /**
- * Simple labeled status card. Presentation only: it never computes
- * financial values (UI_UX.md §68 — financial clarity).
+ * Tarjeta de estado con acento de color lateral.
+ * Solo presentación — nunca calcula valores financieros.
  */
 export function StatusCard({ label, value, tone }: StatusCardProps) {
   const c = usePalette();
   const styles = makeStyles(c);
 
+  const accentColor =
+    tone === 'success' ? c.success : tone === 'danger' ? c.danger : c.primary;
+  const softBg =
+    tone === 'success' ? c.successSoft : tone === 'danger' ? c.dangerSoft : c.primarySoft;
+
   return (
-    <View style={[styles.card, { backgroundColor: c.surface }]}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, toneStyles(c)[tone]]}>{value}</Text>
+    <View style={[styles.card, { backgroundColor: softBg }]}>
+      <View style={[styles.accent, { backgroundColor: accentColor }]} />
+      <View style={styles.body}>
+        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.value, { color: accentColor }]}>{value}</Text>
+      </View>
     </View>
   );
 }
-
-const toneStyles = (c: Palette) =>
-  ({
-    neutral: {},
-    success: { color: c.success },
-    danger: { color: c.danger },
-  }) as const;
 
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     card: {
       width: '100%',
-      paddingVertical: Spacing.md,
-      paddingHorizontal: 20,
       borderRadius: Radius.card,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
+      overflow: 'hidden',
+      flexDirection: 'row',
+    },
+    accent: {
+      width: 4,
+      borderRadius: 999,
+      marginVertical: 2,
+      marginLeft: 2,
+    },
+    body: {
+      flex: 1,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
       gap: 4,
     },
     label: {
-      fontSize: 14,
-      color: c.text,
-      opacity: c.mutedOpacity,
+      fontSize: Typography.base,
+      color: c.textMuted,
+      fontWeight: FontWeight.medium,
     },
     value: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: c.text,
+      fontSize: Typography.lg,
+      fontWeight: FontWeight.bold,
     },
   });

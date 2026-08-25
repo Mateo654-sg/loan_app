@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Radius, Spacing } from '@/constants/tokens';
+import { Badge } from '@/components/ui/badge';
+import type { BadgeTone } from '@/components/ui/badge';
+import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
 import { useInfiniteLoans } from '@/features/loans/queries';
@@ -13,12 +15,43 @@ import { formatMoneyCop } from '@/utils/money';
 const STATUS_FILTERS = ['ACTIVE', 'OVERDUE', 'PAID', 'CANCELLED', 'ALL'] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
-const statusColors = (c: Palette): Record<string, string> => ({
-  ACTIVE: c.primary,
-  OVERDUE: c.danger,
-  PAID: c.success,
-  CANCELLED: c.border,
-});
+const FILTER_LABELS: Record<StatusFilter, string> = {
+  ACTIVE: 'Activo',
+  OVERDUE: 'Vencido',
+  PAID: 'Pagado',
+  CANCELLED: 'Cancelado',
+  ALL: 'Todos',
+};
+
+const STATUS_TONE: Record<string, BadgeTone> = {
+  ACTIVE: 'primary',
+  OVERDUE: 'danger',
+  PAID: 'success',
+  CANCELLED: 'neutral',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: 'Activo',
+  OVERDUE: 'Vencido',
+  PAID: 'Pagado',
+  CANCELLED: 'Cancelado',
+};
+
+function ClientAvatar({ name, c }: { name: string; c: Palette }) {
+  const initials = name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('');
+
+  return (
+    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: Typography.base, fontWeight: FontWeight.bold, color: c.primary }}>
+        {initials}
+      </Text>
+    </View>
+  );
+}
 
 export default function LoansScreen() {
   const c = usePalette();
@@ -29,19 +62,23 @@ export default function LoansScreen() {
 
   const renderItem = ({ item }: { item: LoanDto }) => (
     <Link href={`/(app)/loans/${item.id}`} asChild>
-      <Pressable style={styles.row}>
+      <Pressable
+        style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}
+      >
+        <ClientAvatar name={item.client_name} c={c} />
         <View style={styles.rowMain}>
           <Text style={styles.rowTitle}>{item.client_name}</Text>
-          <Text style={styles.rowSubtitle}>
-            {formatMoneyCop(item.principal)} · {item.number_of_installments} installments ·{' '}
-            {item.amortization_type === 'FRENCH' ? 'French' : 'Fixed'}
+          <Text style={styles.rowSubtitle} numberOfLines={1}>
+            {formatMoneyCop(item.principal)} · {item.number_of_installments} cuotas ·{' '}
+            {item.amortization_type === 'FRENCH' ? 'Francés' : 'Cuota fija'}
           </Text>
         </View>
         <View style={styles.rowRight}>
           <Text style={styles.outstanding}>{formatMoneyCop(item.total_outstanding)}</Text>
-          <Text style={[styles.badge, { color: statusColors(c)[item.status], borderColor: statusColors(c)[item.status] }]}>
-            {item.status}
-          </Text>
+          <Badge
+            label={STATUS_LABEL[item.status] ?? item.status}
+            tone={STATUS_TONE[item.status] ?? 'neutral'}
+          />
         </View>
       </Pressable>
     </Link>
@@ -50,34 +87,58 @@ export default function LoansScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <View style={styles.container}>
+        {/* Acceso rápido a cobros */}
         <Link href="/(app)/loans/collections" asChild>
-          <Pressable style={styles.collectionsButton}>
-            <Text style={styles.collectionsText}>Today's collections →</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.collectionsButton,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Text style={styles.collectionsEmoji}>💳</Text>
+            <Text style={styles.collectionsText}>Cobros de hoy →</Text>
           </Pressable>
         </Link>
+
+        {/* Filtros */}
         <View style={styles.filterRow}>
           {STATUS_FILTERS.map((value) => (
             <Pressable
               key={value}
-              style={[styles.chip, statusFilter === value && styles.chipActive]}
+              style={({ pressed }) => [
+                styles.chip,
+                statusFilter === value && styles.chipActive,
+                pressed && { opacity: 0.75 },
+              ]}
               onPress={() => setStatusFilter(value)}
             >
-              <Text>{value === 'ALL' ? 'All' : value}</Text>
+              <Text
+                style={[
+                  styles.chipText,
+                  statusFilter === value && styles.chipTextActive,
+                ]}
+              >
+                {FILTER_LABELS[value]}
+              </Text>
             </Pressable>
           ))}
         </View>
 
+        {/* Lista / estados */}
         {loans.isPending ? (
-          <ActivityIndicator style={{ padding: Spacing.lg }} />
+          <ActivityIndicator style={{ padding: Spacing.lg }} color={c.primary} />
         ) : loans.isError ? (
-          <Text style={styles.error}>Could not load loans. Check the backend and retry.</Text>
+          <Text style={styles.error}>Error al cargar préstamos. Verifica la conexión.</Text>
         ) : items.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>No loans here</Text>
-            <Text style={styles.emptySubtitle}>Create a loan for one of your customers.</Text>
+            <Text style={styles.emptyEmoji}>📋</Text>
+            <Text style={styles.emptyTitle}>Sin préstamos</Text>
+            <Text style={styles.emptySubtitle}>
+              Crea un préstamo para uno de tus clientes.
+            </Text>
             <Link href="/(app)/loans/new" asChild>
               <Pressable style={styles.emptyButton}>
-                <Text style={styles.emptyButtonText}>+ New loan</Text>
+                <Text style={styles.emptyButtonText}>+ Nuevo préstamo</Text>
               </Pressable>
             </Link>
           </View>
@@ -86,6 +147,7 @@ export default function LoansScreen() {
             data={items}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
             ListFooterComponent={
               loans.hasNextPage ? (
                 <Pressable
@@ -94,7 +156,7 @@ export default function LoansScreen() {
                   disabled={loans.isFetchingNextPage}
                 >
                   <Text style={styles.loadMoreText}>
-                    {loans.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                    {loans.isFetchingNextPage ? 'Cargando...' : 'Cargar más'}
                   </Text>
                 </Pressable>
               ) : null
@@ -102,10 +164,17 @@ export default function LoansScreen() {
           />
         )}
 
+        {/* FAB circular */}
         {items.length > 0 || loans.isPending ? (
           <Link href="/(app)/loans/new" asChild>
-            <Pressable style={styles.fab}>
-              <Text style={styles.fabText}>+ New loan</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.fab,
+                { backgroundColor: c.primary },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.fabText}>＋</Text>
             </Pressable>
           </Link>
         ) : null}
@@ -116,72 +185,93 @@ export default function LoansScreen() {
 
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: c.background },
-  container: { flex: 1, padding: Spacing.md, gap: Spacing.sm },
-  filterRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
-  chip: {
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    paddingHorizontal: 12,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: c.border,
-  },
-  rowMain: { flex: 1, gap: 2 },
-  rowTitle: { fontSize: 16, fontWeight: '500' },
-  rowSubtitle: { fontSize: 13, opacity: c.mutedOpacity },
-  rowRight: { alignItems: 'flex-end', gap: 2 },
-  outstanding: { fontSize: 15, fontWeight: '700' },
-  badge: {
-    fontSize: 11,
-    fontWeight: '700',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
-    overflow: 'hidden',
-    paddingHorizontal: 8,
-    paddingTop: 2,
-    paddingBottom: 3,
-  },
-  loadMore: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-  loadMoreText: { color: c.primary, fontWeight: '600' },
-  emptyBox: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl },
-  emptyTitle: { fontSize: 17, fontWeight: '600' },
-  emptySubtitle: { textAlign: 'center', opacity: 0.6 },
-  emptyButton: {
-    backgroundColor: c.primary,
-    borderRadius: Radius.button,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.md,
-  },
-  emptyButtonText: { color: c.onPrimary, fontWeight: '600' },
-  fab: {
-    backgroundColor: c.primary,
-    borderRadius: Radius.button,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabText: { color: c.onPrimary, fontWeight: '700' },
-  error: { color: c.danger, textAlign: 'center', padding: Spacing.md },
-  collectionsButton: {
-    borderRadius: Radius.button,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.primary,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  collectionsText: { color: c.primary, fontWeight: '600' },
-});;
+    safeArea: { flex: 1, backgroundColor: c.background },
+    container: { flex: 1, padding: Spacing.lg, gap: Spacing.sm },
+
+    // Cobros
+    collectionsButton: {
+      borderRadius: Radius.card,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
+      backgroundColor: c.surface,
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      ...Shadow.sm,
+    },
+    collectionsEmoji: { fontSize: Typography.md },
+    collectionsText: {
+      color: c.primary,
+      fontWeight: FontWeight.semibold,
+      fontSize: Typography.base,
+    },
+
+    // Chips
+    filterRow: { flexDirection: 'row', gap: Spacing.xs, flexWrap: 'wrap' },
+    chip: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: Spacing.md,
+      minHeight: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chipActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
+    chipText: { fontSize: Typography.sm, fontWeight: FontWeight.medium, color: c.textMuted },
+    chipTextActive: { color: c.primary, fontWeight: FontWeight.bold },
+
+    // Filas de préstamo
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.sm + 4,
+      borderBottomWidth: 1,
+      borderBottomColor: c.borderSubtle,
+    },
+    rowMain: { flex: 1, gap: 3 },
+    rowTitle: { fontSize: Typography.md, fontWeight: FontWeight.semibold, color: c.text },
+    rowSubtitle: { fontSize: Typography.sm, color: c.textMuted },
+    rowRight: { alignItems: 'flex-end', gap: 4 },
+    outstanding: { fontSize: Typography.base, fontWeight: FontWeight.extrabold, color: c.text },
+
+    // Carga más
+    loadMore: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+    loadMoreText: { color: c.primary, fontWeight: FontWeight.semibold },
+
+    // Vacío
+    emptyBox: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl },
+    emptyEmoji: { fontSize: 48 },
+    emptyTitle: { fontSize: Typography.lg, fontWeight: FontWeight.bold, color: c.text },
+    emptySubtitle: { textAlign: 'center', color: c.textMuted, fontSize: Typography.sm },
+    emptyButton: {
+      backgroundColor: c.primary,
+      borderRadius: Radius.button,
+      minHeight: 46,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: Spacing.lg,
+      ...Shadow.md,
+    },
+    emptyButtonText: { color: c.onPrimary, fontWeight: FontWeight.bold },
+
+    // FAB
+    fab: {
+      position: 'absolute',
+      bottom: Spacing.lg,
+      right: Spacing.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...Shadow.lg,
+    },
+    fabText: { color: '#FFF', fontSize: 28, fontWeight: '700', lineHeight: 32 },
+
+    // Error
+    error: { color: c.danger, textAlign: 'center', padding: Spacing.md },
+  });
