@@ -1,6 +1,6 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -140,6 +140,15 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={dashboard.isRefetching}
+            onRefresh={() => void dashboard.refetch()}
+            tintColor={c.primary}
+            colors={[c.primary]}
+            progressBackgroundColor={c.surface}
+          />
+        }
       >
         {/* ── Skeleton de carga ────────────────────────────────────────── */}
         {dashboard.isPending ? (

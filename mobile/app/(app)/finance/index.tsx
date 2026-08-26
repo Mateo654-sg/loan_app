@@ -16,6 +16,7 @@ import {
 } from '@/features/finance/queries';
 import type { TransactionDto } from '@/features/finance/types';
 import { formatIsoDateShort, formatMoneyCop } from '@/utils/money';
+import { hapticWarning } from '@/utils/haptics';
 
 type TypeFilter = 'TODOS' | 'INGRESOS' | 'GASTOS';
 
@@ -52,7 +53,10 @@ export default function FinanceScreen() {
         {
           text: 'Cancelar transacción',
           style: 'destructive',
-          onPress: () => cancelTransaction.mutate(transaction.id),
+          onPress: () => {
+            hapticWarning();
+            cancelTransaction.mutate(transaction.id);
+          },
         },
       ],
     );

@@ -27,6 +27,7 @@ import {
 import type { InstallmentDto, PaymentDto } from '@/features/loans/types';
 import { installmentStatusEs, paymentMethodEs } from '@/utils/labels-es';
 import { formatIsoDateShort, formatMoneyCop, todayIsoDate } from '@/utils/money';
+import { hapticError, hapticSuccess, hapticWarning } from '@/utils/haptics';
 
 const statusColors = (c: Palette): Record<string, string> => ({
   ACTIVE: c.primary,
@@ -206,6 +207,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
       setPaymentFormOpen(false);
       setAmount('');
       setReference('');
+      hapticSuccess();
 
       // Success view with the backend-confirmed allocation (UI_UX.md §43).
       Alert.alert(
@@ -219,6 +221,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
             : ''),
       );
     } catch (error) {
+      hapticError();
       setPaymentError(
         error instanceof Error ? error.message : 'Unexpected error. Please try again.'
       );

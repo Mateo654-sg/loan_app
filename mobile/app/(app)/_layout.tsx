@@ -1,14 +1,23 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FontWeight, Shadow, Spacing, Typography } from '@/constants/tokens';
-import { usePalette } from '@/hooks/use-palette';
+import { darkPalette, lightPalette } from '@/theme/palette';
+import { FontWeight, Radius, Spacing, Typography } from '@/constants/tokens';
 
 /**
- * Navegación inferior refinada con íconos vectoriales dinámicos.
+ * Navegación inferior (PRODUCT_SPECIFICATION.md §31):
+ * Inicio · Finanzas · Préstamos · Clientes · Más.
+ *
+ * El inset inferior se aplica EXPLÍCITAMENTE al tab bar: es la única forma
+ * determinista de garantizar que la barra/gesture de Android nunca tape
+ * las pestañas, independiente de cómo reporte insets cada dispositivo.
  */
 export default function AppLayout() {
-  const c = usePalette();
+  const scheme = useColorScheme();
+  const c = scheme === 'dark' ? darkPalette : lightPalette;
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -20,14 +29,14 @@ export default function AppLayout() {
           backgroundColor: c.surface,
           borderTopColor: c.borderSubtle,
           borderTopWidth: 1,
-          height: 64,
+          height: 62 + insets.bottom,
           paddingTop: 6,
-          paddingBottom: Spacing.xs,
-          ...Shadow.sm,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
         },
         tabBarLabelStyle: {
           fontSize: Typography.xs,
           fontWeight: FontWeight.semibold,
+          color: c.text,
           marginTop: 2,
         },
         headerStyle: {
@@ -36,7 +45,7 @@ export default function AppLayout() {
         headerShadowVisible: false,
         headerTintColor: c.text,
         headerTitleStyle: {
-          fontWeight: FontWeight.extrabold,
+          fontWeight: FontWeight.bold,
           fontSize: Typography.md,
           color: c.text,
         },
@@ -48,8 +57,8 @@ export default function AppLayout() {
         options={{
           title: 'Inicio',
           headerShown: false,
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
@@ -57,8 +66,8 @@ export default function AppLayout() {
         name="finance"
         options={{
           title: 'Finanzas',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart" size={size} color={color} />
           ),
         }}
       />
@@ -66,8 +75,8 @@ export default function AppLayout() {
         name="loans"
         options={{
           title: 'Préstamos',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cash" size={size} color={color} />
           ),
         }}
       />
@@ -75,8 +84,8 @@ export default function AppLayout() {
         name="clients"
         options={{
           title: 'Clientes',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
           ),
         }}
       />
@@ -84,8 +93,8 @@ export default function AppLayout() {
         name="settings"
         options={{
           title: 'Más',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'grid' : 'grid-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="options" size={size} color={color} />
           ),
         }}
       />

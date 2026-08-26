@@ -1,13 +1,16 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
+import { hapticTap } from '@/utils/haptics';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface ButtonProps {
   label: string;
@@ -17,12 +20,12 @@ interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  leftEmoji?: string;
   iconName?: keyof typeof Ionicons.glyphMap;
 }
 
 /**
- * Botón reutilizable con gradientes, soporte de íconos vectoriales y feedback táctil.
+ * Botón reutilizable con variantes, tamaños, haptics y animación
+ * de escala al presionar. Usa la paleta del tema automáticamente.
  */
 export function Button({
   label,
@@ -32,12 +35,22 @@ export function Button({
   loading = false,
   disabled = false,
   fullWidth = false,
-  leftEmoji,
   iconName,
 }: ButtonProps) {
   const c = usePalette();
   const styles = makeStyles(c);
   const isDisabled = disabled || loading;
+
+  // Animación de presión: escala 1 → 0.97 → 1
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePress = () => {
+    hapticTap();
+    onPress();
+  };
 
   const getVariantStyle = () => {
     switch (variant) {
@@ -73,74 +86,59 @@ export function Button({
     }
   };
 
-  const iconSize = size === 'sm' ? 16 : size === 'lg' ? 22 : 18;
-  const iconColor = (variant === 'primary' || variant === 'danger' ? c.onPrimary : c.primary);
-
-  const renderInnerContent = () => (
-    loading ? (
-      <ActivityIndicator color={iconColor} size="small" />
-    ) : (
-      <View style={styles.content}>
-        {iconName ? (
-          <Ionicons name={iconName} size={iconSize} color={iconColor} />
-        ) : leftEmoji ? (
-          <Text style={[styles.emoji, getTextSizeStyle()]}>{leftEmoji}</Text>
-        ) : null}
-        <Text style={[styles.text, getTextStyle(), getTextSizeStyle()]}>{label}</Text>
-      </View>
-    )
-  );
-
   return (
-    <Pressable
-      style={({ pressed }) => [
+    <AnimatedPressable
+      style={[
+        animatedStyle,
         styles.base,
+        getVariantStyle(),
         getSizeStyle(),
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
-        pressed && !isDisabled && styles.pressed,
       ]}
-      onPress={onPress}
+      onPress={handlePress}
+      onPressIn={() => {
+        scale.value = withTiming(0.97, { duration: 90 });
+      }}
+      onPressOut={() => {
+        scale.value = withTiming(1, { duration: 140 });
+      }}
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      {variant === 'primary' && !isDisabled ? (
-        <LinearGradient
-          colors={c.primaryGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.gradient, getSizeStyle()]}
-        >
-          {renderInnerContent()}
-        </LinearGradient>
+      {loading ? (
+        <ActivityIndicator
+          color={variant === 'primary' || variant === 'danger' ? c.onPrimary : c.primary}
+          size="small"
+        />
       ) : (
-        <View style={[styles.inner, getVariantStyle(), getSizeStyle()]}>
-          {renderInnerContent()}
+        <View style={styles.row}>
+          {iconName ? (
+            <Ionicons name={iconName} size={Typography.md + 2} color={getTextColor(c, variant)} />
+          ) : null}
+          <Text style={[styles.text, getTextStyle(), getTextSizeStyle()]}>{label}</Text>
         </View>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
+}
+
+function getTextColor(c: Palette, variant: ButtonVariant): string {
+  switch (variant) {
+    case 'primary': return c.onPrimary;
+    case 'secondary': return c.primary;
+    case 'ghost': return c.primary;
+    case 'danger': return c.onDanger;
+  }
 }
 
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     base: {
-      borderRadius: Radius.button,
-      overflow: 'hidden',
-    },
-    inner: {
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: Radius.button,
-      width: '100%',
-    },
-    gradient: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: Radius.button,
-      width: '100%',
-      ...Shadow.md,
     },
     // Variantes
     primary: {
@@ -160,22 +158,24 @@ const makeStyles = (c: Palette) =>
       ...Shadow.sm,
     },
     // Tamaños
-    sizeSm: { minHeight: 38, paddingHorizontal: Spacing.md },
-    sizeMd: { minHeight: 50, paddingHorizontal: Spacing.lg },
-    sizeLg: { minHeight: 56, paddingHorizontal: Spacing.xl },
-    fullWidth: { alignSelf: 'stretch' },
-    disabled: { opacity: 0.5 },
-    pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+    sizeSm: { minHeight: 38 },
+    sizeMd: { minHeight: 50 },
+    sizeLg: { minHeight: 56 },
+    fullWidth: { alignSelf: 'stretch', width: '100%' },
+    disabled: { opacity: 0.45 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.xs,
+    },
     // Textos
-    text: { fontWeight: FontWeight.semibold, letterSpacing: 0.2 },
+    text: { fontWeight: FontWeight.semibold, letterSpacing: 0.2, textAlign: 'center' },
     textPrimary: { color: c.onPrimary },
     textSecondary: { color: c.primary },
     textGhost: { color: c.primary },
     textDanger: { color: c.onDanger },
     textSm: { fontSize: Typography.sm },
-    textMd: { fontSize: Typography.md },
+    textMd: { fontSize: Typography.base },
     textLg: { fontSize: Typography.lg },
-    // Layout interno
-    content: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2 },
-    emoji: { fontSize: Typography.base },
   });
