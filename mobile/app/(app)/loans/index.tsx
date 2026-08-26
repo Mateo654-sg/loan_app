@@ -97,7 +97,7 @@ export default function LoansScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Acceso rápido a cobros */}
         <Link href="/(app)/loans/collections" asChild>

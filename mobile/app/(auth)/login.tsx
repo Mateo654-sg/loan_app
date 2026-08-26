@@ -98,7 +98,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}
+          contentContainerStyle={[styles.container]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

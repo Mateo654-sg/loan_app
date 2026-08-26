@@ -78,8 +78,8 @@ export default function CategoriesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]} keyboardShouldPersistTaps="handled">
         <View style={styles.createBox}>
           <Text style={styles.sectionTitle}>New category</Text>
           <View style={styles.typeRow}>

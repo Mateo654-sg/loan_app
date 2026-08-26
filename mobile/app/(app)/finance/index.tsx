@@ -141,7 +141,7 @@ export default function FinanceScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Resumen de saldo */}
         {summary.isPending ? (

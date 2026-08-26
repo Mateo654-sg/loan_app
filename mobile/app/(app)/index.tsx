@@ -114,7 +114,7 @@ export default function HomeScreen() {
   const firstName = (user?.full_name ?? '').split(' ')[0];
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <View>
@@ -138,7 +138,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}
+        contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Skeleton de carga ────────────────────────────────────────── */}

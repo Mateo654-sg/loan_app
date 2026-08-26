@@ -225,10 +225,10 @@ export default function CollectionsScreen() {
   const items = collectionsQuery.data?.items ?? [];
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
         contentContainerStyle={[
-          { paddingBottom: insets.bottom + Spacing.lg },
+          { paddingBottom: Spacing.xl },
           styles.container,
         ]}
         showsVerticalScrollIndicator={false}

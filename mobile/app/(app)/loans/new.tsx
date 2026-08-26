@@ -139,8 +139,8 @@ function Chip({
   });
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]} keyboardShouldPersistTaps="handled">
         <View>
           <Text style={styles.sectionLabel}>Customer</Text>
           {clients.isPending ? (

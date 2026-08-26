@@ -253,8 +253,8 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]}>
         <View style={styles.headerBox}>
           <View>
             <Text style={styles.name}>{data.client_name}</Text>

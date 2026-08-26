@@ -153,8 +153,8 @@ export default function GoalsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]} keyboardShouldPersistTaps="handled">
         <View style={styles.createBox}>
           <Text style={styles.sectionTitle}>New goal</Text>
           <FormInput label="Nombre" value={name} onChangeText={setName} placeholder="Emergency fund" />

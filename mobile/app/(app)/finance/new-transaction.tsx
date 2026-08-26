@@ -83,10 +83,10 @@ export default function NewTransactionScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen options={{ title: selectedType === 'INCOME' ? 'Nuevo ingreso' : 'Nuevo gasto' }} />
       <ScrollView
-        contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}
+        contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

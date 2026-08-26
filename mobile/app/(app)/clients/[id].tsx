@@ -110,8 +110,8 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]}>
         <View style={styles.headerBox}>
           <Text style={styles.name}>{data.full_name}</Text>
           <Text
