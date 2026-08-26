@@ -1,7 +1,9 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -63,10 +65,14 @@ export default function FinanceScreen() {
     const isCancelled = item.status === 'CANCELLED';
 
     return (
-      <View style={[styles.row, isCancelled && { opacity: 0.45 }]}>
+      <View style={[styles.rowCard, isCancelled && { opacity: 0.45 }]}>
         {/* Ícono de tipo */}
         <View style={[styles.txIcon, { backgroundColor: isIncome ? c.successSoft : c.dangerSoft }]}>
-          <Text style={{ fontSize: 16 }}>{isIncome ? '↑' : '↓'}</Text>
+          <Ionicons
+            name={isIncome ? 'arrow-up' : 'arrow-down'}
+            size={18}
+            color={isIncome ? c.success : c.danger}
+          />
         </View>
         <View style={styles.rowMain}>
           <Text style={styles.rowTitle} numberOfLines={1}>
@@ -86,9 +92,9 @@ export default function FinanceScreen() {
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Cancelar transacción"
-            style={({ pressed }) => [{ opacity: pressed ? 0.4 : 0.5 }]}
+            style={({ pressed }) => [{ opacity: pressed ? 0.5 : 0.7, paddingLeft: 4 }]}
           >
-            <Text style={styles.rowAction}>✕</Text>
+            <Ionicons name="close-circle-outline" size={18} color={c.textMuted} />
           </Pressable>
         ) : null}
       </View>
@@ -99,16 +105,22 @@ export default function FinanceScreen() {
     if (transactions.isPending) return <ActivityIndicator style={{ padding: Spacing.md }} color={c.primary} />;
     if (transactions.isError) {
       return (
-        <Text style={styles.errorText}>
-          Error al cargar transacciones. Verifica la conexión.
-        </Text>
+        <View style={styles.errorBox}>
+          <Ionicons name="cloud-offline-outline" size={32} color={c.danger} />
+          <Text style={styles.errorText}>
+            Error al cargar transacciones. Verifica la conexión.
+          </Text>
+        </View>
       );
     }
     if (allItems.length === 0) {
       return (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyEmoji}>💸</Text>
-          <Text style={styles.emptyText}>Sin transacciones aún. ¡Agrega la primera!</Text>
+          <View style={styles.emptyIconBox}>
+            <Ionicons name="wallet-outline" size={40} color={c.textMuted} />
+          </View>
+
+          <Text style={styles.emptyText}>Sin transacciones en este filtro</Text>
         </View>
       );
     }
@@ -120,7 +132,7 @@ export default function FinanceScreen() {
           disabled={transactions.isFetchingNextPage}
         >
           <Text style={styles.loadMoreText}>
-            {transactions.isFetchingNextPage ? 'Cargando...' : 'Cargar más'}
+            {transactions.isFetchingNextPage ? 'Cargando...' : 'Cargar más transacciones'}
           </Text>
         </Pressable>
       );
@@ -133,26 +145,39 @@ export default function FinanceScreen() {
       <View style={styles.container}>
         {/* Resumen de saldo */}
         {summary.isPending ? (
-          <ActivityIndicator color={c.primary} />
+          <ActivityIndicator color={c.primary} style={{ padding: Spacing.md }} />
         ) : summary.data ? (
           <View style={styles.summaryRow}>
-            {/* Saldo — prominente */}
-            <View style={[styles.balanceCard, { backgroundColor: c.primary }]}>
-              <Text style={styles.balanceLabel}>Saldo</Text>
+            {/* Saldo — prominente con gradiente */}
+            <LinearGradient
+              colors={c.primaryGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.balanceCard}
+            >
+              <Text style={styles.balanceLabel}>Saldo actual</Text>
               <Text style={styles.balanceValue} numberOfLines={1}>
                 {formatMoneyCop(summary.data.balance)}
               </Text>
-            </View>
+            </LinearGradient>
+
             {/* Ingresos y gastos */}
             <View style={styles.summaryCol}>
-              <View style={[styles.miniCard, { backgroundColor: c.successSoft, borderColor: c.success + '40' }]}>
-                <Text style={[styles.miniLabel, { color: c.textMuted }]}>Ingresos</Text>
+              <View style={[styles.miniCard, { backgroundColor: c.successSoft, borderColor: c.success + '30' }]}>
+                <View style={styles.miniHeader}>
+                  <Ionicons name="arrow-up-circle" size={14} color={c.success} />
+                  <Text style={[styles.miniLabel, { color: c.textMuted }]}>Ingresos</Text>
+                </View>
                 <Text style={[styles.miniValue, { color: c.success }]} numberOfLines={1}>
                   {formatMoneyCop(summary.data.total_income)}
                 </Text>
               </View>
-              <View style={[styles.miniCard, { backgroundColor: c.dangerSoft, borderColor: c.danger + '40' }]}>
-                <Text style={[styles.miniLabel, { color: c.textMuted }]}>Gastos</Text>
+
+              <View style={[styles.miniCard, { backgroundColor: c.dangerSoft, borderColor: c.danger + '30' }]}>
+                <View style={styles.miniHeader}>
+                  <Ionicons name="arrow-down-circle" size={14} color={c.danger} />
+                  <Text style={[styles.miniLabel, { color: c.textMuted }]}>Gastos</Text>
+                </View>
                 <Text style={[styles.miniValue, { color: c.danger }]} numberOfLines={1}>
                   {formatMoneyCop(summary.data.total_expenses)}
                 </Text>
@@ -163,15 +188,23 @@ export default function FinanceScreen() {
           <Text style={styles.errorText}>Error al cargar el resumen.</Text>
         )}
 
-        {/* Botón principal */}
+        {/* Botón principal de agregar movimiento */}
         <Link href="/(app)/finance/new-transaction" asChild>
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
-              pressed && { opacity: 0.86 },
+              pressed && { opacity: 0.88, transform: [{ scale: 0.985 }] },
             ]}
           >
-            <Text style={styles.primaryButtonText}>＋ Agregar movimiento</Text>
+            <LinearGradient
+              colors={c.primaryGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.primaryButtonGradient}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={c.onPrimary} />
+              <Text style={styles.primaryButtonText}>Nuevo movimiento</Text>
+            </LinearGradient>
           </Pressable>
         </Link>
 
@@ -181,20 +214,22 @@ export default function FinanceScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
-                pressed && { opacity: 0.75 },
+                pressed && { opacity: 0.8 },
               ]}
             >
-              <Text style={styles.secondaryText}>🏷 Categorías</Text>
+              <Ionicons name="pricetags-outline" size={16} color={c.primary} />
+              <Text style={styles.secondaryText}>Categorías</Text>
             </Pressable>
           </Link>
           <Link href="/(app)/finance/goals" asChild>
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
-                pressed && { opacity: 0.75 },
+                pressed && { opacity: 0.8 },
               ]}
             >
-              <Text style={styles.secondaryText}>🎯 Metas</Text>
+              <Ionicons name="flag-outline" size={16} color={c.accent} />
+              <Text style={styles.secondaryText}>Metas</Text>
             </Pressable>
           </Link>
         </View>
@@ -207,7 +242,7 @@ export default function FinanceScreen() {
               style={({ pressed }) => [
                 styles.chip,
                 typeFilter === value && styles.chipActive,
-                pressed && { opacity: 0.75 },
+                pressed && { opacity: 0.8 },
               ]}
               onPress={() => setTypeFilter(value)}
             >
@@ -228,6 +263,7 @@ export default function FinanceScreen() {
           data={allItems}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          contentContainerStyle={{ gap: Spacing.xs + 2, paddingBottom: 20 }}
           ListFooterComponent={listFooter}
           onRefresh={() => void transactions.refetch()}
           refreshing={transactions.isRefetching}
@@ -243,7 +279,7 @@ const makeStyles = (c: Palette) =>
     safeArea: { flex: 1, backgroundColor: c.background },
     container: {
       flex: 1,
-      gap: Spacing.sm,
+      gap: Spacing.md,
       paddingHorizontal: Spacing.lg,
       paddingTop: Spacing.md,
     },
@@ -254,43 +290,52 @@ const makeStyles = (c: Palette) =>
       flex: 1.2,
       borderRadius: Radius.card,
       padding: Spacing.md,
-      gap: 4,
+      gap: 6,
       justifyContent: 'center',
       ...Shadow.md,
     },
     balanceLabel: {
       fontSize: Typography.xs,
-      color: 'rgba(255,255,255,0.75)',
+      color: 'rgba(255,255,255,0.8)',
       fontWeight: FontWeight.semibold,
-      letterSpacing: 0.5,
+      letterSpacing: 0.4,
     },
     balanceValue: {
       fontSize: Typography.lg,
-      fontWeight: FontWeight.extrabold,
-      color: '#FFF',
+      fontWeight: FontWeight.black,
+      color: c.onPrimary,
     },
-    summaryCol: { flex: 1, gap: Spacing.sm },
+    summaryCol: { flex: 1, gap: Spacing.xs + 2 },
     miniCard: {
       flex: 1,
       borderRadius: Radius.card,
-      paddingVertical: Spacing.sm,
+      paddingVertical: Spacing.xs + 4,
       paddingHorizontal: Spacing.sm + 4,
       gap: 2,
       borderWidth: 1,
       ...Shadow.sm,
     },
-    miniLabel: { fontSize: Typography.xs, fontWeight: FontWeight.medium },
+    miniHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    miniLabel: { fontSize: Typography.xs, fontWeight: FontWeight.semibold },
     miniValue: { fontSize: Typography.sm, fontWeight: FontWeight.extrabold },
 
     // Botones
     primaryButton: {
-      backgroundColor: c.primary,
       borderRadius: Radius.button,
-      minHeight: 48,
+      overflow: 'hidden',
+      ...Shadow.md,
+    },
+    primaryButtonGradient: {
+      minHeight: 50,
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 12,
-      ...Shadow.md,
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.lg,
     },
     primaryButtonText: { color: c.onPrimary, fontWeight: FontWeight.bold, fontSize: Typography.base },
 
@@ -301,12 +346,14 @@ const makeStyles = (c: Palette) =>
       borderWidth: 1,
       borderColor: c.borderSubtle,
       backgroundColor: c.surface,
-      minHeight: 42,
+      minHeight: 44,
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: Spacing.xs,
       ...Shadow.sm,
     },
-    secondaryText: { fontSize: Typography.sm, fontWeight: FontWeight.semibold, color: c.text },
+    secondaryText: { fontSize: Typography.sm, fontWeight: FontWeight.bold, color: c.text },
 
     // Chips
     filterRow: { flexDirection: 'row', gap: Spacing.xs },
@@ -315,41 +362,53 @@ const makeStyles = (c: Palette) =>
       borderWidth: 1,
       borderColor: c.border,
       paddingHorizontal: Spacing.md,
-      minHeight: 36,
+      minHeight: 34,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: c.surface,
     },
-    chipActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
-    chipText: { fontSize: Typography.sm, fontWeight: FontWeight.medium, color: c.textMuted },
-    chipTextActive: { color: c.primary, fontWeight: FontWeight.bold },
+    chipActive: { backgroundColor: c.primary, borderColor: c.primary },
+    chipText: { fontSize: Typography.sm, fontWeight: FontWeight.semibold, color: c.textMuted },
+    chipTextActive: { color: c.onPrimary, fontWeight: FontWeight.bold },
 
     // Transacciones
-    row: {
+    rowCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.sm,
-      paddingVertical: Spacing.sm + 2,
-      borderBottomWidth: 1,
-      borderBottomColor: c.borderSubtle,
+      padding: Spacing.md,
+      borderRadius: Radius.card,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
+      ...Shadow.sm,
     },
     txIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 10,
+      width: 38,
+      height: 38,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    rowMain: { flex: 1, gap: 2 },
-    rowTitle: { fontSize: Typography.base, fontWeight: FontWeight.medium, color: c.text },
-    rowSubtitle: { fontSize: Typography.xs, color: c.textMuted },
-    rowAmount: { fontSize: Typography.base, fontWeight: FontWeight.bold },
-    rowAction: { fontSize: Typography.md, color: c.textMuted },
+    rowMain: { flex: 1, gap: 3 },
+    rowTitle: { fontSize: Typography.base, fontWeight: FontWeight.bold, color: c.text },
+    rowSubtitle: { fontSize: Typography.xs, color: c.textMuted, fontWeight: FontWeight.medium },
+    rowAmount: { fontSize: Typography.base, fontWeight: FontWeight.extrabold },
 
     // Footer
-    loadMore: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-    loadMoreText: { color: c.primary, fontWeight: FontWeight.semibold },
-    emptyBox: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl },
-    emptyEmoji: { fontSize: 40 },
-    emptyText: { textAlign: 'center', color: c.textMuted, fontSize: Typography.base },
-    errorText: { color: c.danger, textAlign: 'center', padding: Spacing.md },
+    loadMore: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginVertical: Spacing.sm },
+    loadMoreText: { color: c.primary, fontWeight: FontWeight.bold, fontSize: Typography.sm },
+    emptyBox: { alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.xl },
+    emptyIconBox: {
+      width: 64,
+      height: 64,
+      borderRadius: 20,
+      backgroundColor: c.chipBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.xs,
+    },
+    emptyText: { textAlign: 'center', color: c.textMuted, fontSize: Typography.sm, fontWeight: FontWeight.medium },
+    errorBox: { alignItems: 'center', gap: Spacing.xs, padding: Spacing.lg },
+    errorText: { color: c.danger, textAlign: 'center', fontWeight: FontWeight.medium },
   });

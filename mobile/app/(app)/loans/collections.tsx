@@ -8,7 +8,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -45,14 +46,17 @@ const CLASSIFICATION_LABEL: Record<string, string> = {
 function SummaryCard({
   label,
   value,
+  iconName,
   tone = 'neutral',
   c,
 }: {
   label: string;
   value: string;
+  iconName: keyof typeof Ionicons.glyphMap;
   tone?: 'neutral' | 'success' | 'danger' | 'warning';
   c: Palette;
 }) {
+  const sumStyles = summaryStyles(c);
   const valueColor =
     tone === 'success'
       ? c.success
@@ -72,16 +76,20 @@ function SummaryCard({
           : c.surface;
 
   return (
-    <View style={[summaryStyles.card, { backgroundColor: bgColor, borderColor: valueColor + '33' }]}>
-      <Text style={[summaryStyles.label, { color: c.textMuted }]}>{label}</Text>
-      <Text style={[summaryStyles.value, { color: valueColor }]} numberOfLines={1}>
+    <View style={[sumStyles.card, { backgroundColor: bgColor, borderColor: valueColor + '33' }]}>
+      <View style={sumStyles.headerRow}>
+        <Ionicons name={iconName} size={15} color={valueColor} />
+        <Text style={[sumStyles.label, { color: c.textMuted }]}>{label}</Text>
+      </View>
+      <Text style={[sumStyles.value, { color: valueColor }]} numberOfLines={1}>
         {formatMoneyCop(value)}
       </Text>
     </View>
   );
 }
 
-const summaryStyles = StyleSheet.create({
+const summaryStyles = (c: Palette) =>
+  StyleSheet.create({
   card: {
     flexBasis: '48%',
     flexGrow: 1,
@@ -89,14 +97,20 @@ const summaryStyles = StyleSheet.create({
     borderWidth: 1,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
-    gap: 4,
+    gap: 6,
     ...Shadow.sm,
   },
-  label: { fontSize: Typography.xs, fontWeight: FontWeight.medium },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  label: { fontSize: Typography.xs, fontWeight: FontWeight.semibold },
   value: { fontSize: Typography.base, fontWeight: FontWeight.extrabold },
 });
 
 function CollectionCard({ item, c }: { item: CollectionItemDto; c: Palette }) {
+  const cardSt = cardStyles(c);
   const urgencyColor = CLASSIFICATION_COLOR(c)[item.classification] ?? c.textMuted;
   const isOverdue = item.days_overdue > 0;
   const classLabel = isOverdue
@@ -104,35 +118,40 @@ function CollectionCard({ item, c }: { item: CollectionItemDto; c: Palette }) {
     : (CLASSIFICATION_LABEL[item.classification] ?? item.classification);
 
   return (
-    <View style={[cardStyles.card, { backgroundColor: c.surface, borderColor: c.borderSubtle }]}>
+    <View style={[cardSt.card, { backgroundColor: c.surface, borderColor: c.borderSubtle }]}>
       {/* Barra lateral de urgencia */}
-      <View style={[cardStyles.urgencyBar, { backgroundColor: urgencyColor }]} />
-      <View style={cardStyles.body}>
-        <View style={cardStyles.header}>
-          <Text style={[cardStyles.clientName, { color: c.text }]}>{item.client_name}</Text>
-          <View style={[cardStyles.classBadge, { backgroundColor: urgencyColor + '22', borderColor: urgencyColor + '55' }]}>
-            <Text style={[cardStyles.classLabel, { color: urgencyColor }]}>{classLabel}</Text>
+      <View style={[cardSt.urgencyBar, { backgroundColor: urgencyColor }]} />
+      <View style={cardSt.body}>
+        <View style={cardSt.header}>
+          <Text style={[cardSt.clientName, { color: c.text }]}>{item.client_name}</Text>
+          <View style={[cardSt.classBadge, { backgroundColor: urgencyColor + '20', borderColor: urgencyColor + '40' }]}>
+            <View style={[cardSt.dot, { backgroundColor: urgencyColor }]} />
+            <Text style={[cardSt.classLabel, { color: urgencyColor }]}>{classLabel}</Text>
           </View>
         </View>
-        <Text style={[cardStyles.meta, { color: c.textMuted }]}>
-          Cuota #{item.installment_number} · vence {formatIsoDateShort(item.due_date)}
+        <Text style={[cardSt.meta, { color: c.textMuted }]}>
+          Cuota #{item.installment_number} · Vence {formatIsoDateShort(item.due_date)}
           {parseFloat(item.late_fee_projected) > 0
-            ? ` · mora ${formatMoneyCop(item.late_fee_projected)}`
+            ? ` · Mora ${formatMoneyCop(item.late_fee_projected)}`
             : ''}
         </Text>
-        <View style={cardStyles.footer}>
-          <Text style={[cardStyles.outstanding, { color: c.text }]}>
-            {formatMoneyCop(item.total_outstanding)}
-          </Text>
+        <View style={cardSt.footer}>
+          <View>
+            <Text style={cardSt.outstandingLabel}>Pendiente por cobrar</Text>
+            <Text style={[cardSt.outstanding, { color: c.text }]}>
+              {formatMoneyCop(item.total_outstanding)}
+            </Text>
+          </View>
           <Link href={`/(app)/loans/${item.loan_id}`} asChild>
             <Pressable
               style={({ pressed }) => [
-                cardStyles.collectButton,
+                cardSt.collectButton,
                 { backgroundColor: c.primary },
-                pressed && { opacity: 0.8 },
+                pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
               ]}
             >
-              <Text style={cardStyles.collectText}>Cobrar</Text>
+              <Ionicons name="cash-outline" size={16} color={c.onPrimary} />
+              <Text style={cardSt.collectText}>Cobrar</Text>
             </Pressable>
           </Link>
         </View>
@@ -141,121 +160,169 @@ function CollectionCard({ item, c }: { item: CollectionItemDto; c: Palette }) {
   );
 }
 
-const cardStyles = StyleSheet.create({
+const cardStyles = (c: Palette) =>
+  StyleSheet.create({
   card: {
     borderRadius: Radius.card,
     borderWidth: 1,
-    flexDirection: 'row',
     overflow: 'hidden',
+    flexDirection: 'row',
     ...Shadow.sm,
   },
-  urgencyBar: { width: 4 },
-  body: { flex: 1, padding: Spacing.md, gap: 6 },
+  urgencyBar: { width: 5 },
+  body: { flex: 1, padding: Spacing.md, gap: Spacing.xs + 2 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  clientName: { fontSize: Typography.md, fontWeight: FontWeight.semibold, flex: 1, marginRight: 8 },
+  clientName: { fontSize: Typography.base, fontWeight: FontWeight.bold, flex: 1 },
   classBadge: {
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   classLabel: { fontSize: Typography.xs, fontWeight: FontWeight.bold },
-  meta: { fontSize: Typography.xs },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
-  outstanding: { fontSize: Typography.lg, fontWeight: FontWeight.extrabold },
+  meta: { fontSize: Typography.xs, fontWeight: FontWeight.medium },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.xs,
+    paddingTop: Spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  outstandingLabel: { fontSize: 10, color: c.textMuted, fontWeight: '500' },
+  outstanding: { fontSize: Typography.base, fontWeight: FontWeight.extrabold },
   collectButton: {
     borderRadius: Radius.button,
-    minHeight: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: Spacing.md,
-    ...Shadow.md,
+    paddingVertical: Spacing.xs + 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    ...Shadow.sm,
   },
-  collectText: { color: '#FFF', fontWeight: FontWeight.bold, fontSize: Typography.sm },
+  collectText: { color: c.onPrimary, fontWeight: FontWeight.bold, fontSize: Typography.xs },
 });
 
-// ─── Pantalla ─────────────────────────────────────────────────────────────────
+// ─── Pantalla principal ───────────────────────────────────────────────────────
 
-/**
- * Pantalla de operaciones diarias — quién paga hoy, quién está vencido
- * y cuánto se ha cobrado. Todos los valores vienen del backend.
- */
 export default function CollectionsScreen() {
   const c = usePalette();
   const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
+  const sumStyles = summaryStyles(c);
+  const cardSt = cardStyles(c);
   const [filter, setFilter] = useState<CollectionsFilter>('TODAY');
-  const today = useTodayCollections();
-  const list = useCollections(filter);
+
+  const todayQuery = useTodayCollections();
+  const collectionsQuery = useCollections(filter);
+
+  const summary = todayQuery.data;
+  const items = collectionsQuery.data?.items ?? [];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView
-        contentContainerStyle={[{ paddingBottom: insets.bottom + Spacing.lg }, styles.container]}
+        contentContainerStyle={[
+          { paddingBottom: insets.bottom + Spacing.lg },
+          styles.container,
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Título + fecha */}
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageTitle}>Cobros de hoy</Text>
-          <Text style={styles.pageDate}>
-            {today.data ? formatIsoDateShort(today.data.business_date) : '…'}
-          </Text>
-        </View>
-
-        {/* Resumen del día */}
-        {today.isPending ? (
-          <ActivityIndicator color={c.primary} />
-        ) : today.data ? (
-          <View style={styles.summaryGrid}>
-            <SummaryCard label="Esperado" value={today.data.summary.expected_today} c={c} />
-            <SummaryCard label="Cobrado" value={today.data.summary.collected_today} tone="success" c={c} />
-            <SummaryCard label="Pendiente" value={today.data.summary.pending_today} tone="warning" c={c} />
-            <SummaryCard label="Vencido" value={today.data.summary.overdue} tone="danger" c={c} />
+        {/* Summary tarjetas */}
+        <Text style={styles.sectionTitle}>Resumen del día</Text>
+        {todayQuery.isPending ? (
+          <ActivityIndicator color={c.primary} style={{ padding: Spacing.md }} />
+        ) : summary ? (
+          <View style={styles.grid}>
+            <SummaryCard
+              label="Esperado hoy"
+              value={summary.summary.expected_today}
+              iconName="calendar-outline"
+              tone="neutral"
+              c={c}
+            />
+            <SummaryCard
+              label="Cobrado hoy"
+              value={summary.summary.collected_today}
+              iconName="checkmark-circle-outline"
+              tone="success"
+              c={c}
+            />
+            <SummaryCard
+              label="Pendiente hoy"
+              value={summary.summary.pending_today}
+              iconName="time-outline"
+              tone="warning"
+              c={c}
+            />
+            <SummaryCard
+              label="Mora acumulada"
+              value={summary.summary.overdue}
+              iconName="alert-circle-outline"
+              tone="danger"
+              c={c}
+            />
           </View>
-        ) : (
-          <Text style={styles.error}>No se pudo cargar el resumen del día.</Text>
-        )}
+        ) : null}
 
-        {/* Filtros horizontales */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.filterRow}>
-            {FILTERS.map((option) => (
-              <Pressable
-                key={option.value}
-                style={({ pressed }) => [
-                  styles.chip,
-                  filter === option.value && styles.chipActive,
-                  pressed && { opacity: 0.75 },
+        {/* Filtros */}
+        <Text style={styles.sectionTitle}>Cobros por período</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {FILTERS.map(({ value, label }) => (
+            <Pressable
+              key={value}
+              style={({ pressed }) => [
+                styles.chip,
+                filter === value && styles.chipActive,
+                pressed && { opacity: 0.8 },
+              ]}
+              onPress={() => setFilter(value)}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  filter === value && styles.chipTextActive,
                 ]}
-                onPress={() => setFilter(option.value)}
               >
-                <Text
-                  style={[
-                    styles.chipText,
-                    filter === option.value && styles.chipTextActive,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+                {label}
+              </Text>
+            </Pressable>
+          ))}
         </ScrollView>
 
         {/* Lista de cobros */}
-        {list.isPending ? (
-          <ActivityIndicator color={c.primary} />
-        ) : list.isError ? (
-          <Text style={styles.error}>Error al cargar cobros.</Text>
-        ) : list.data.items.length === 0 ? (
+        {collectionsQuery.isPending ? (
+          <ActivityIndicator color={c.primary} style={{ padding: Spacing.xl }} size="large" />
+        ) : collectionsQuery.isError ? (
+          <View style={styles.errorBox}>
+            <Ionicons name="cloud-offline-outline" size={32} color={c.danger} />
+            <Text style={styles.error}>No se pudieron cargar los cobros.</Text>
+          </View>
+        ) : items.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyEmoji}>✅</Text>
-            <Text style={styles.emptyText}>Nada que cobrar con este filtro.</Text>
+            <View style={styles.emptyIconBox}>
+              <Ionicons name="checkmark-done-circle-outline" size={44} color={c.success} />
+            </View>
+            <Text style={styles.emptyTitle}>¡Todo al día!</Text>
+            <Text style={styles.emptySubtitle}>
+              No hay cobros pendientes para el filtro seleccionado.
+            </Text>
           </View>
         ) : (
-          list.data.items.map((item) => (
-            <CollectionCard key={item.installment_id} item={item} c={c} />
-          ))
+          <View style={styles.list}>
+            {items.map((item) => (
+              <CollectionCard key={`${item.loan_id}-${item.installment_number}`} item={item} c={c} />
+            ))}
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -265,15 +332,15 @@ export default function CollectionsScreen() {
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: c.background },
-    container: { padding: Spacing.lg, gap: Spacing.sm, paddingBottom: Spacing.xl },
-
-    pageHeader: { gap: 2 },
-    pageTitle: { fontSize: Typography.xl, fontWeight: FontWeight.extrabold, color: c.text, letterSpacing: -0.4 },
-    pageDate: { fontSize: Typography.sm, color: c.textMuted },
-
-    summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-
-    filterRow: { flexDirection: 'row', gap: Spacing.xs, paddingVertical: Spacing.xs },
+    container: { padding: Spacing.lg, gap: Spacing.md },
+    sectionTitle: {
+      fontSize: Typography.md,
+      fontWeight: FontWeight.extrabold,
+      color: c.text,
+      letterSpacing: -0.2,
+    },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    filterRow: { flexDirection: 'row', gap: Spacing.xs, paddingBottom: 4 },
     chip: {
       borderRadius: 999,
       borderWidth: 1,
@@ -282,14 +349,24 @@ const makeStyles = (c: Palette) =>
       minHeight: 36,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: c.surface,
     },
-    chipActive: { backgroundColor: c.primarySoft, borderColor: c.primary },
-    chipText: { fontSize: Typography.sm, fontWeight: FontWeight.medium, color: c.textMuted },
-    chipTextActive: { color: c.primary, fontWeight: FontWeight.bold },
-
-    emptyBox: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xl },
-    emptyEmoji: { fontSize: 40 },
-    emptyText: { textAlign: 'center', color: c.textMuted, fontSize: Typography.base },
-
-    error: { color: c.danger, textAlign: 'center', padding: Spacing.md },
+    chipActive: { backgroundColor: c.primary, borderColor: c.primary },
+    chipText: { fontSize: Typography.sm, fontWeight: FontWeight.semibold, color: c.textMuted },
+    chipTextActive: { color: c.onPrimary, fontWeight: FontWeight.bold },
+    list: { gap: Spacing.sm },
+    emptyBox: { alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.xxl },
+    emptyIconBox: {
+      width: 72,
+      height: 72,
+      borderRadius: 24,
+      backgroundColor: c.successSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.xs,
+    },
+    emptyTitle: { fontSize: Typography.lg, fontWeight: FontWeight.bold, color: c.text },
+    emptySubtitle: { color: c.textMuted, fontSize: Typography.sm, textAlign: 'center' },
+    errorBox: { alignItems: 'center', gap: Spacing.xs, padding: Spacing.lg },
+    error: { color: c.danger, textAlign: 'center', fontWeight: FontWeight.medium },
   });

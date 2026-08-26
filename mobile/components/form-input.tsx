@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View, TextInputProps } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, TextInputProps } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FontWeight, Radius, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -9,45 +10,82 @@ interface FormInputProps extends TextInputProps {
   label: string;
   error?: string;
   hint?: string;
+  leftIcon?: keyof typeof Ionicons.glyphMap;
 }
 
 /**
- * Input con label, estado de error, hint y focus highlight.
- * Esquema-aware — sigue el tema del sistema automáticamente.
+ * Input estilizado con label, estado de error, hint, íconos y alternancia de contraseña.
  */
-export function FormInput({ label, error, hint, ...inputProps }: FormInputProps) {
+export function FormInput({
+  label,
+  error,
+  hint,
+  leftIcon,
+  secureTextEntry,
+  ...inputProps
+}: FormInputProps) {
   const c = usePalette();
   const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const styles = makeStyles(c);
+
+  const isPassword = Boolean(secureTextEntry);
+  const isSecure = isPassword && !showPassword;
 
   return (
     <View style={styles.container}>
       <Text style={[styles.label, focused && styles.labelFocused]}>
         {label}
       </Text>
-      <TextInput
+      <View
         style={[
-          styles.input,
-          focused && styles.inputFocused,
-          error ? styles.inputError : null,
+          styles.inputWrapper,
+          focused && styles.inputWrapperFocused,
+          error ? styles.inputWrapperError : null,
         ]}
-        placeholderTextColor={c.textSubtle}
-        accessible
-        accessibilityLabel={label}
-        accessibilityHint={error ?? hint}
-        onFocus={(e) => {
-          setFocused(true);
-          inputProps.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          inputProps.onBlur?.(e);
-        }}
-        {...inputProps}
-      />
+      >
+        {leftIcon ? (
+          <Ionicons
+            name={leftIcon}
+            size={20}
+            color={error ? c.danger : focused ? c.primary : c.textMuted}
+            style={styles.leftIcon}
+          />
+        ) : null}
+        <TextInput
+          style={styles.input}
+          placeholderTextColor={c.textSubtle}
+          accessible
+          accessibilityLabel={label}
+          accessibilityHint={error ?? hint}
+          secureTextEntry={isSecure}
+          onFocus={(e) => {
+            setFocused(true);
+            inputProps.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            inputProps.onBlur?.(e);
+          }}
+          {...inputProps}
+        />
+        {isPassword ? (
+          <Pressable
+            onPress={() => setShowPassword((prev) => !prev)}
+            style={styles.rightIconButton}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={c.textMuted}
+            />
+          </Pressable>
+        ) : null}
+      </View>
       {error ? (
         <View style={styles.errorRow}>
-          <Text style={styles.errorIcon}>⚠</Text>
+          <Ionicons name="alert-circle-outline" size={15} color={c.danger} />
           <Text style={styles.error}>{error}</Text>
         </View>
       ) : null}
@@ -70,33 +108,42 @@ const makeStyles = (c: Palette) =>
     labelFocused: {
       color: c.primary,
     },
-    input: {
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
       borderWidth: 1.5,
       borderColor: c.border,
       borderRadius: Radius.input,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: 13,
-      fontSize: Typography.md,
-      minHeight: 50,
-      color: c.text,
       backgroundColor: c.surface,
+      minHeight: 52,
+      paddingHorizontal: Spacing.md,
     },
-    inputFocused: {
+    inputWrapperFocused: {
       borderColor: c.primary,
       backgroundColor: c.primarySofter,
     },
-    inputError: {
+    inputWrapperError: {
       borderColor: c.danger,
       backgroundColor: c.dangerSoft,
+    },
+    leftIcon: {
+      marginRight: Spacing.sm,
+    },
+    rightIconButton: {
+      padding: 4,
+      marginLeft: Spacing.xs,
+    },
+    input: {
+      flex: 1,
+      fontSize: Typography.md,
+      color: c.text,
+      paddingVertical: 12,
     },
     errorRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-    },
-    errorIcon: {
-      fontSize: Typography.xs,
-      color: c.danger,
+      marginTop: 2,
     },
     error: {
       fontSize: Typography.sm,

@@ -1,17 +1,14 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 
-import { darkPalette, lightPalette } from '@/theme/palette';
-import { FontWeight, Radius, Spacing, Typography } from '@/constants/tokens';
+import { FontWeight, Shadow, Spacing, Typography } from '@/constants/tokens';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
- * Navegación inferior (PRODUCT_SPECIFICATION.md §31):
- * Inicio · Finanzas · Préstamos · Clientes · Más.
+ * Navegación inferior refinada con íconos vectoriales dinámicos.
  */
 export default function AppLayout() {
-  const scheme = useColorScheme();
-  const c = scheme === 'dark' ? darkPalette : lightPalette;
+  const c = usePalette();
 
   return (
     <Tabs
@@ -24,12 +21,13 @@ export default function AppLayout() {
           borderTopColor: c.borderSubtle,
           borderTopWidth: 1,
           height: 64,
-          paddingTop: Spacing.sm,
+          paddingTop: 6,
+          paddingBottom: Spacing.xs,
+          ...Shadow.sm,
         },
         tabBarLabelStyle: {
           fontSize: Typography.xs,
           fontWeight: FontWeight.semibold,
-          color: c.text,
           marginTop: 2,
         },
         headerStyle: {
@@ -38,7 +36,7 @@ export default function AppLayout() {
         headerShadowVisible: false,
         headerTintColor: c.text,
         headerTitleStyle: {
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.extrabold,
           fontSize: Typography.md,
           color: c.text,
         },
@@ -50,8 +48,8 @@ export default function AppLayout() {
         options={{
           title: 'Inicio',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -59,8 +57,8 @@ export default function AppLayout() {
         name="finance"
         options={{
           title: 'Finanzas',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" size={size} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -68,8 +66,8 @@ export default function AppLayout() {
         name="loans"
         options={{
           title: 'Préstamos',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cash" size={size} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -77,8 +75,8 @@ export default function AppLayout() {
         name="clients"
         options={{
           title: 'Clientes',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -86,8 +84,8 @@ export default function AppLayout() {
         name="settings"
         options={{
           title: 'Más',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="options" size={size} color={color} />
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'grid' : 'grid-outline'} size={size} color={color} />
           ),
         }}
       />

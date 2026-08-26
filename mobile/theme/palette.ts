@@ -39,17 +39,28 @@ export interface Palette {
   onDanger: string;
   warning: string;
   warningSoft: string;
+  onHeroSuccess: string;
+  onHeroDanger: string;
+
+  // Gradientes & Visuales
+  primaryGradient: [string, string];
+  accentGradient: [string, string];
+  heroGradient: [string, string, string];
+  cardBorder: string;
+  glassBg: string;
+  chipBg: string;
 }
 
 export const lightPalette: Palette = {
   // Fondos — off-white con tinte índigo muy sutil
-  background: '#F4F4FF',
+  background: '#F6F6FE',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
 
   // Bordes — sutiles
   border: '#E2E2F0',
-  borderSubtle: '#EBEBF8',
+  borderSubtle: '#EEF0FA',
+  cardBorder: 'rgba(226, 226, 240, 0.8)',
 
   // Textos
   text: '#0F0F1A',
@@ -69,42 +80,52 @@ export const lightPalette: Palette = {
   accentSoft: '#F3F0FF',
 
   // Semánticos
-  success: '#059669',
-  successSoft: '#D1FAE5',
+  success: '#10B981',
+  successSoft: '#ECFDF5',
   onSuccess: '#FFFFFF',
-  danger: '#DC2626',
-  dangerSoft: '#FEE2E2',
+  danger: '#EF4444',
+  dangerSoft: '#FEF2F2',
   onDanger: '#FFFFFF',
-  warning: '#D97706',
-  warningSoft: '#FEF3C7',
+  warning: '#F59E0B',
+  warningSoft: '#FFFBEB',
+  onHeroSuccess: '#A7F3D0',
+  onHeroDanger: '#FECACA',
+
+  // Gradientes & Visuales
+  primaryGradient: ['#4F46E5', '#6366F1'],
+  accentGradient: ['#7C3AED', '#9333EA'],
+  heroGradient: ['#3730A3', '#4F46E5', '#7C3AED'],
+  glassBg: 'rgba(255, 255, 255, 0.75)',
+  chipBg: '#F1F3FB',
 };
 
 export const darkPalette: Palette = {
   // Fondos — azul-negro profundo
-  background: '#0E0E1C',
-  surface: '#18182E',
-  surfaceElevated: '#1E1E3A',
+  background: '#0B0B16',
+  surface: '#151528',
+  surfaceElevated: '#1D1D36',
 
   // Bordes
-  border: '#2C2C50',
-  borderSubtle: '#232342',
+  border: '#292947',
+  borderSubtle: '#1F1F38',
+  cardBorder: 'rgba(41, 41, 71, 0.8)',
 
   // Textos
-  text: '#EEEEFF',
-  textMuted: '#9898CC',
-  textSubtle: '#5E5E8A',
+  text: '#F3F4F6',
+  textMuted: '#9CA3AF',
+  textSubtle: '#6B7280',
   mutedOpacity: 0.55,
 
   // Primario — índigo claro sobre oscuro
-  primary: '#818CF8',
-  primaryDark: '#6366F1',
+  primary: '#6366F1',
+  primaryDark: '#4F46E5',
   primarySoft: '#1E1B4B',
   primarySofter: '#191730',
-  onPrimary: '#0E0E1C',
+  onPrimary: '#FFFFFF',
 
   // Acento — violeta claro
-  accent: '#A78BFA',
-  accentSoft: '#1D1535',
+  accent: '#8B5CF6',
+  accentSoft: '#2E1065',
 
   // Semánticos
   success: '#34D399',
@@ -113,6 +134,15 @@ export const darkPalette: Palette = {
   danger: '#F87171',
   dangerSoft: '#450A0A',
   onDanger: '#0E0E1C',
-  warning: '#FCD34D',
+  warning: '#FBBF24',
   warningSoft: '#451A03',
+  onHeroSuccess: '#86EFAC',
+  onHeroDanger: '#FCA5A5',
+
+  // Gradientes & Visuales
+  primaryGradient: ['#6366F1', '#818CF8'],
+  accentGradient: ['#8B5CF6', '#A78BFA'],
+  heroGradient: ['#1E1B4B', '#312E81', '#4C1D95'],
+  glassBg: 'rgba(21, 21, 40, 0.75)',
+  chipBg: '#1E1E36',
 };

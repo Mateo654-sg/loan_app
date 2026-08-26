@@ -1,8 +1,10 @@
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
@@ -18,20 +20,32 @@ import { formatMoneyCop } from '@/utils/money';
 function MetricCard({
   label,
   value,
+  iconName,
   tone = 'neutral',
   c,
 }: {
   label: string;
   value: string;
+  iconName: keyof typeof Ionicons.glyphMap;
   tone?: 'neutral' | 'success' | 'danger';
   c: Palette;
 }) {
   const valueColor =
     tone === 'success' ? c.success : tone === 'danger' ? c.danger : c.text;
+  const iconBg =
+    tone === 'success' ? c.successSoft : tone === 'danger' ? c.dangerSoft : c.primarySoft;
+  const iconColor =
+    tone === 'success' ? c.success : tone === 'danger' ? c.danger : c.primary;
   const styles = makeStyles(c);
+
   return (
     <View style={styles.metricCard}>
-      <Text style={styles.metricLabel}>{label}</Text>
+      <View style={styles.metricHeader}>
+        <View style={[styles.metricIconBox, { backgroundColor: iconBg }]}>
+          <Ionicons name={iconName} size={16} color={iconColor} />
+        </View>
+        <Text style={styles.metricLabel}>{label}</Text>
+      </View>
       <Text style={[styles.metricValue, { color: valueColor }]} numberOfLines={1}>
         {value}
       </Text>
@@ -42,12 +56,16 @@ function MetricCard({
 function ActionButton({
   href,
   label,
-  emoji,
+  iconName,
+  bgTint,
+  iconColor,
   c,
 }: {
   href: string;
   label: string;
-  emoji: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+  bgTint: string;
+  iconColor: string;
   c: Palette;
 }) {
   const styles = makeStyles(c);
@@ -56,10 +74,12 @@ function ActionButton({
       <Pressable
         style={({ pressed }) => [
           styles.actionButton,
-          pressed && { opacity: 0.75 },
+          pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
         ]}
       >
-        <Text style={styles.actionEmoji}>{emoji}</Text>
+        <View style={[styles.actionIconBox, { backgroundColor: bgTint }]}>
+          <Ionicons name={iconName} size={22} color={iconColor} />
+        </View>
         <Text style={styles.actionText}>{label}</Text>
       </Pressable>
     </Link>
@@ -69,17 +89,20 @@ function ActionButton({
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 
 /**
- * Dashboard (información financiera accionable primero).
- * Los datos vienen del read-model del backend; nada se calcula en cliente.
- * Se refresca en cada focus para mantenerse actualizado.
+ * Dashboard refinado UX/UI.
  */
 export default function HomeScreen() {
   const c = usePalette();
   const insets = useSafeAreaInsets();
   const styles = makeStyles(c);
 
+  const [showBalance, setShowBalance] = useState(true);
   const user = useAuthStore((state) => state.user);
   const dashboard = useDashboard();
+  const expectedNum = parseFloat(dashboard.data?.loans.today_collections_expected ?? '0');
+  const pendingNum = parseFloat(dashboard.data?.loans.today_collections_pending ?? '0');
+  const collectedPct =
+    expectedNum > 0 ? Math.min(100, Math.round(((expectedNum - pendingNum) / expectedNum) * 100)) : 0;
   const queryClient = useQueryClient();
 
   useFocusEffect(
@@ -104,9 +127,14 @@ export default function HomeScreen() {
             </Text>
           ) : null}
         </View>
-        <View style={[styles.logoMark, { backgroundColor: c.primary }]}>
+        <LinearGradient
+          colors={c.primaryGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoMark}
+        >
           <Text style={styles.logoChar}>₱</Text>
-        </View>
+        </LinearGradient>
       </View>
 
       <ScrollView
@@ -116,23 +144,23 @@ export default function HomeScreen() {
         {/* ── Skeleton de carga ────────────────────────────────────────── */}
         {dashboard.isPending ? (
           <SkeletonGroup gap={Spacing.sm}>
-            <Skeleton height={110} />
+            <Skeleton height={140} />
             <View style={styles.rowGap}>
-              <Skeleton height={72} width="48%" />
-              <Skeleton height={72} width="48%" />
+              <Skeleton height={82} width="48%" />
+              <Skeleton height={82} width="48%" />
             </View>
             <View style={styles.rowGap}>
-              <Skeleton height={72} width="48%" />
-              <Skeleton height={72} width="48%" />
+              <Skeleton height={82} width="48%" />
+              <Skeleton height={82} width="48%" />
             </View>
-            <Skeleton height={88} />
+            <Skeleton height={94} />
             <Skeleton height={52} />
           </SkeletonGroup>
         ) : dashboard.isError || !dashboard.data ? (
           /* ── Error ─────────────────────────────────────────────────── */
           <View style={styles.errorBox}>
-            <Text style={styles.errorIcon}>⚠️</Text>
-            <Text style={styles.errorText}>No se pudo cargar el panel.</Text>
+            <Ionicons name="alert-circle-outline" size={44} color={c.danger} />
+            <Text style={styles.errorText}>No se pudo cargar el panel financiero.</Text>
             <Pressable
               style={({ pressed }) => [
                 styles.retryButton,
@@ -145,27 +173,62 @@ export default function HomeScreen() {
           </View>
         ) : (
           <>
-            {/* ── Hero: Saldo personal ──────────────────────────────── */}
-            <View style={[styles.heroCard, { backgroundColor: c.primary }]}>
-              <Text style={styles.heroLabel}>Saldo personal</Text>
+            {/* ── Hero: Saldo personal con Gradiente ──────────────────── */}
+            <LinearGradient
+              colors={c.heroGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroCard}
+            >
+              <View style={styles.heroHeader}>
+                <Text style={styles.heroLabel}>Saldo personal disponible</Text>
+                <Pressable
+                  onPress={() => setShowBalance((prev) => !prev)}
+                  hitSlop={10}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons
+                    name={showBalance ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color="rgba(255,255,255,0.85)"
+                  />
+                </Pressable>
+              </View>
+
               <Text style={styles.heroValue}>
-                {formatMoneyCop(dashboard.data.finance.balance)}
+                {showBalance
+                  ? formatMoneyCop(dashboard.data.finance.balance)
+                  : '$ ••••••••'}
               </Text>
+
               <View style={styles.heroRow}>
                 <View style={styles.heroStat}>
-                  <Text style={styles.heroStatLabel}>↑ Ingresos este mes</Text>
-                  <Text style={[styles.heroStatValue, { color: '#86EFAC' }]}>
-                    {formatMoneyCop(dashboard.data.finance.monthly_income)}
+                  <View style={styles.heroStatHeader}>
+                    <Ionicons name="arrow-up-circle" size={14} color={c.onHeroSuccess} />
+                    <Text style={styles.heroStatLabel}>Ingresos mes</Text>
+                  </View>
+                  <Text style={[styles.heroStatValue, { color: c.onHeroSuccess }]}>
+                    {showBalance
+                      ? formatMoneyCop(dashboard.data.finance.monthly_income)
+                      : '$ ••••'}
                   </Text>
                 </View>
+
+                <View style={styles.heroDivider} />
+
                 <View style={[styles.heroStat, styles.heroStatRight]}>
-                  <Text style={styles.heroStatLabel}>↓ Gastos este mes</Text>
-                  <Text style={[styles.heroStatValue, { color: '#FCA5A5' }]}>
-                    {formatMoneyCop(dashboard.data.finance.monthly_expenses)}
+                  <View style={styles.heroStatHeader}>
+                    <Ionicons name="arrow-down-circle" size={14} color={c.onHeroDanger} />
+                    <Text style={styles.heroStatLabel}>Gastos mes</Text>
+                  </View>
+                  <Text style={[styles.heroStatValue, { color: c.onHeroDanger }]}>
+                    {showBalance
+                      ? formatMoneyCop(dashboard.data.finance.monthly_expenses)
+                      : '$ ••••'}
                   </Text>
                 </View>
               </View>
-            </View>
+            </LinearGradient>
 
             {/* ── Resumen de préstamos ──────────────────────────────── */}
             <Text style={styles.sectionTitle}>Resumen de préstamos</Text>
@@ -173,22 +236,26 @@ export default function HomeScreen() {
               <MetricCard
                 label="Por cobrar"
                 value={formatMoneyCop(dashboard.data.loans.total_receivable)}
+                iconName="cash-outline"
                 c={c}
               />
               <MetricCard
                 label="Vencido"
                 value={formatMoneyCop(dashboard.data.loans.total_overdue)}
+                iconName="alert-circle-outline"
                 tone="danger"
                 c={c}
               />
               <MetricCard
                 label="Capital prestado"
                 value={formatMoneyCop(dashboard.data.loans.total_capital_lent)}
+                iconName="wallet-outline"
                 c={c}
               />
               <MetricCard
                 label="Interés cobrado"
                 value={formatMoneyCop(dashboard.data.loans.collected_interest)}
+                iconName="trending-up-outline"
                 tone="success"
                 c={c}
               />
@@ -199,29 +266,65 @@ export default function HomeScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.collectionsCard,
-                  pressed && { opacity: 0.8 },
+                  pressed && { opacity: 0.82 },
                 ]}
               >
                 <View style={styles.collectionsHeader}>
-                  <Text style={styles.sectionTitle}>Cobros de hoy</Text>
-                  <Text style={[styles.linkHint, { color: c.primary }]}>Ver todos →</Text>
+                  <View style={styles.collectionsTitleRow}>
+                    <View style={styles.collectionsIconBox}>
+                      <Ionicons name="card-outline" size={20} color={c.primary} />
+                    </View>
+                    <Text style={styles.collectionsTitle}>Cobros de hoy</Text>
+                  </View>
+                  <View style={styles.linkHintRow}>
+                    <Text style={[styles.linkHint, { color: c.primary }]}>Gestionar</Text>
+                    <Ionicons name="chevron-forward" size={16} color={c.primary} />
+                  </View>
                 </View>
-                <Text style={styles.collectionsLine}>
-                  Esperado {formatMoneyCop(dashboard.data.loans.today_collections_expected)}
-                  {' · '}Pendiente{' '}
-                  {formatMoneyCop(dashboard.data.loans.today_collections_pending)}
-                </Text>
+
+                <View style={styles.collectionsContent}>
+                  <View style={styles.collectionsStat}>
+                    <Text style={styles.collectionsStatLabel}>Esperado hoy</Text>
+                    <Text style={styles.collectionsStatValue}>
+                      {formatMoneyCop(dashboard.data.loans.today_collections_expected)}
+                    </Text>
+                  </View>
+                  <View style={styles.collectionsStat}>
+                    <Text style={styles.collectionsStatLabel}>Pendiente</Text>
+                    <Text style={[styles.collectionsStatValue, { color: c.warning }]}>
+                      {formatMoneyCop(dashboard.data.loans.today_collections_pending)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Barra de progreso de recaudo */}
+                {expectedNum > 0 ? (
+                  <View style={styles.collectionProgressTrack}>
+                    <View
+                      style={[
+                        styles.collectionProgressFill,
+                        {
+                          width: `${collectedPct}%`,
+                          backgroundColor: c.success,
+                        },
+                      ]}
+                    />
+                  </View>
+                ) : null}
               </Pressable>
             </Link>
 
             {/* ── Metas ────────────────────────────────────────────── */}
             {dashboard.data.goals.length > 0 ? (
               <>
-                <Text style={styles.sectionTitle}>Metas</Text>
+                <Text style={styles.sectionTitle}>Metas activas</Text>
                 {dashboard.data.goals.slice(0, 3).map((goal) => (
                   <View key={goal.id} style={styles.goalCard}>
                     <View style={styles.goalHeader}>
-                      <Text style={styles.goalName}>{goal.name}</Text>
+                      <View style={styles.goalTitleRow}>
+                        <Ionicons name="flag-outline" size={18} color={c.primary} />
+                        <Text style={styles.goalName}>{goal.name}</Text>
+                      </View>
                       <Text style={[styles.goalPercent, { color: c.primary }]}>
                         {goal.progress_percent}%
                       </Text>
@@ -238,7 +341,7 @@ export default function HomeScreen() {
                       />
                     </View>
                     <Text style={styles.goalMeta}>
-                      {formatMoneyCop(goal.current_amount)} /{' '}
+                      {formatMoneyCop(goal.current_amount)} de{' '}
                       {formatMoneyCop(goal.target_amount)}
                     </Text>
                   </View>
@@ -252,25 +355,33 @@ export default function HomeScreen() {
               <ActionButton
                 href="/(app)/finance/new-transaction"
                 label="Ingreso/Gasto"
-                emoji="💰"
+                iconName="swap-horizontal-outline"
+                bgTint={c.successSoft}
+                iconColor={c.success}
                 c={c}
               />
               <ActionButton
                 href="/(app)/clients/new"
                 label="Nuevo cliente"
-                emoji="👤"
+                iconName="person-add-outline"
+                bgTint={c.primarySoft}
+                iconColor={c.primary}
                 c={c}
               />
               <ActionButton
                 href="/(app)/loans/new"
                 label="Nuevo préstamo"
-                emoji="📋"
+                iconName="document-text-outline"
+                bgTint={c.accentSoft}
+                iconColor={c.accent}
                 c={c}
               />
               <ActionButton
                 href="/(app)/finance"
                 label="Finanzas"
-                emoji="📊"
+                iconName="pie-chart-outline"
+                bgTint={c.warningSoft}
+                iconColor={c.warning}
                 c={c}
               />
             </View>
@@ -283,6 +394,7 @@ export default function HomeScreen() {
               ]}
               onPress={() => void logoutUser()}
             >
+              <Ionicons name="log-out-outline" size={16} color={c.textMuted} />
               <Text style={styles.logoutText}>Cerrar sesión</Text>
             </Pressable>
           </>
@@ -319,18 +431,19 @@ const makeStyles = (c: Palette) =>
       marginTop: 2,
     },
     logoMark: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
+      width: 42,
+      height: 42,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
+      ...Shadow.sm,
     },
-    logoChar: { fontSize: 20, color: '#FFF', fontWeight: '800' },
+    logoChar: { fontSize: 22, color: '#FFF', fontWeight: '800' },
 
     // Content
     container: {
       padding: Spacing.lg,
-      gap: Spacing.sm,
+      gap: Spacing.md,
       paddingBottom: Spacing.xl,
     },
     rowGap: { flexDirection: 'row', gap: Spacing.sm },
@@ -342,31 +455,52 @@ const makeStyles = (c: Palette) =>
       gap: Spacing.sm,
       ...Shadow.lg,
     },
+    heroHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
     heroLabel: {
       fontSize: Typography.sm,
-      color: 'rgba(255,255,255,0.75)',
+      color: 'rgba(255,255,255,0.8)',
       fontWeight: FontWeight.semibold,
-      letterSpacing: 0.5,
+      letterSpacing: 0.4,
+    },
+    eyeButton: {
+      padding: 4,
     },
     heroValue: {
       fontSize: Typography.hero,
       fontWeight: FontWeight.black,
-      color: '#FFFFFF',
+      color: c.onPrimary,
       letterSpacing: -1,
+      marginVertical: 2,
     },
     heroRow: {
       flexDirection: 'row',
+      alignItems: 'center',
       gap: Spacing.md,
       marginTop: Spacing.xs,
       paddingTop: Spacing.sm,
       borderTopWidth: 1,
-      borderTopColor: 'rgba(255,255,255,0.15)',
+      borderTopColor: 'rgba(255,255,255,0.18)',
+    },
+    heroDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: 'rgba(255,255,255,0.2)',
     },
     heroStat: { flex: 1, gap: 2 },
-    heroStatRight: { alignItems: 'flex-end' },
+    heroStatRight: { alignItems: 'flex-start' },
+    heroStatHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
     heroStatLabel: {
       fontSize: Typography.xs,
-      color: 'rgba(255,255,255,0.65)',
+      color: 'rgba(255,255,255,0.75)',
+      fontWeight: FontWeight.medium,
     },
     heroStatValue: {
       fontSize: Typography.base,
@@ -375,11 +509,11 @@ const makeStyles = (c: Palette) =>
 
     // Sección
     sectionTitle: {
-      fontSize: Typography.base,
-      fontWeight: FontWeight.bold,
+      fontSize: Typography.md,
+      fontWeight: FontWeight.extrabold,
       color: c.text,
       marginTop: Spacing.xs,
-      letterSpacing: 0.1,
+      letterSpacing: -0.2,
     },
 
     // Metric cards
@@ -393,16 +527,29 @@ const makeStyles = (c: Palette) =>
       borderColor: c.borderSubtle,
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.md,
-      gap: 4,
+      gap: 8,
       ...Shadow.sm,
+    },
+    metricHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    metricIconBox: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     metricLabel: {
       fontSize: Typography.xs,
       color: c.textMuted,
-      fontWeight: FontWeight.medium,
+      fontWeight: FontWeight.semibold,
+      flex: 1,
     },
     metricValue: {
-      fontSize: Typography.base,
+      fontSize: Typography.md,
       fontWeight: FontWeight.extrabold,
       color: c.text,
     },
@@ -412,7 +559,7 @@ const makeStyles = (c: Palette) =>
       backgroundColor: c.surface,
       borderRadius: Radius.card,
       padding: Spacing.md,
-      gap: 6,
+      gap: Spacing.sm,
       borderWidth: 1,
       borderColor: c.borderSubtle,
       ...Shadow.sm,
@@ -422,13 +569,62 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    collectionsLine: {
-      fontSize: Typography.sm,
-      color: c.textMuted,
+    collectionsTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs + 2,
+    },
+    collectionsIconBox: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: c.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    collectionsTitle: {
+      fontSize: Typography.base,
+      fontWeight: FontWeight.bold,
+      color: c.text,
+    },
+    linkHintRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
     },
     linkHint: {
-      fontSize: Typography.sm,
+      fontSize: Typography.xs,
       fontWeight: FontWeight.bold,
+    },
+    collectionsContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      backgroundColor: c.primarySofter,
+      padding: Spacing.sm,
+      borderRadius: Radius.sm,
+    },
+    collectionsStat: {
+      gap: 2,
+    },
+    collectionsStatLabel: {
+      fontSize: Typography.xs,
+      color: c.textMuted,
+      fontWeight: FontWeight.medium,
+    },
+    collectionsStatValue: {
+      fontSize: Typography.base,
+      fontWeight: FontWeight.extrabold,
+      color: c.text,
+    },
+    collectionProgressTrack: {
+      height: 6,
+      borderRadius: 999,
+      backgroundColor: c.borderSubtle,
+      overflow: 'hidden',
+    },
+    collectionProgressFill: {
+      height: '100%',
+      borderRadius: 999,
     },
 
     // Goals
@@ -442,8 +638,9 @@ const makeStyles = (c: Palette) =>
       ...Shadow.sm,
     },
     goalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    goalName: { fontSize: Typography.base, fontWeight: FontWeight.semibold, color: c.text },
-    goalPercent: { fontSize: Typography.sm, fontWeight: FontWeight.bold },
+    goalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    goalName: { fontSize: Typography.base, fontWeight: FontWeight.bold, color: c.text },
+    goalPercent: { fontSize: Typography.sm, fontWeight: FontWeight.extrabold },
     progressTrack: {
       height: 7,
       borderRadius: 999,
@@ -451,7 +648,7 @@ const makeStyles = (c: Palette) =>
       overflow: 'hidden',
     },
     progressFill: { height: '100%', borderRadius: 999 },
-    goalMeta: { fontSize: Typography.xs, color: c.textMuted },
+    goalMeta: { fontSize: Typography.xs, color: c.textMuted, fontWeight: FontWeight.medium },
 
     // Actions grid
     actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
@@ -462,31 +659,41 @@ const makeStyles = (c: Palette) =>
       borderWidth: 1,
       borderColor: c.borderSubtle,
       backgroundColor: c.surface,
-      minHeight: 72,
+      minHeight: 80,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 6,
+      gap: 8,
       paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.md,
       ...Shadow.sm,
     },
-    actionEmoji: { fontSize: 24 },
+    actionIconBox: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     actionText: {
       fontSize: Typography.sm,
-      fontWeight: FontWeight.semibold,
+      fontWeight: FontWeight.bold,
       color: c.text,
       textAlign: 'center',
     },
 
     // Logout
     logoutButton: {
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.xs,
       paddingVertical: Spacing.md,
-      marginTop: Spacing.sm,
+      marginTop: Spacing.xs,
     },
     logoutText: {
       color: c.textMuted,
       fontSize: Typography.sm,
-      fontWeight: FontWeight.medium,
+      fontWeight: FontWeight.semibold,
     },
 
     // Error
@@ -495,8 +702,7 @@ const makeStyles = (c: Palette) =>
       gap: Spacing.sm,
       paddingVertical: Spacing.xl,
     },
-    errorIcon: { fontSize: 40 },
-    errorText: { color: c.danger, textAlign: 'center' },
+    errorText: { color: c.danger, textAlign: 'center', fontWeight: FontWeight.medium },
     retryButton: {
       backgroundColor: c.primarySoft,
       borderRadius: Radius.button,
@@ -505,7 +711,7 @@ const makeStyles = (c: Palette) =>
     },
     retryText: {
       color: c.primary,
-      fontWeight: FontWeight.semibold,
+      fontWeight: FontWeight.bold,
       fontSize: Typography.base,
     },
   });

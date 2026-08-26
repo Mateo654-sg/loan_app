@@ -3,18 +3,19 @@ import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FormInput } from '@/components/form-input';
+import { Button } from '@/components/ui/button';
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
@@ -25,27 +26,32 @@ import { loginUser } from '@/services/auth/auth-service';
 function AppLogo({ c }: { c: Palette }) {
   return (
     <View style={logoStyles.wrapper}>
-      <View style={[logoStyles.iconBox, { backgroundColor: c.primary, ...Shadow.lg }]}>
+      <LinearGradient
+        colors={c.primaryGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[logoStyles.iconBox, Shadow.lg]}
+      >
         <Text style={logoStyles.iconText}>₱</Text>
-      </View>
+      </LinearGradient>
       <Text style={[logoStyles.appName, { color: c.text }]}>PocketPal</Text>
       <Text style={[logoStyles.tagline, { color: c.textMuted }]}>
-        GESTIÓN DE PRÉSTAMOS
+        FINANZAS & PRÉSTAMOS
       </Text>
     </View>
   );
 }
 
 const logoStyles = StyleSheet.create({
-  wrapper: { alignItems: 'center', gap: 10 },
+  wrapper: { alignItems: 'center', gap: 8 },
   iconBox: {
-    width: 80,
-    height: 80,
+    width: 76,
+    height: 76,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconText: { fontSize: 40, color: '#FFF', fontWeight: '800' },
+  iconText: { fontSize: 38, color: '#FFF', fontWeight: '800' },
   appName: {
     fontSize: Typography.xxl,
     fontWeight: FontWeight.extrabold,
@@ -53,8 +59,8 @@ const logoStyles = StyleSheet.create({
   },
   tagline: {
     fontSize: Typography.xs,
-    fontWeight: FontWeight.semibold,
-    letterSpacing: 2,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 2.5,
     marginTop: 2,
   },
 });
@@ -99,7 +105,10 @@ export default function LoginScreen() {
           <AppLogo c={c} />
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Iniciar sesión</Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Bienvenido de nuevo</Text>
+              <Text style={styles.cardSubtitle}>Ingresa tus credenciales para continuar</Text>
+            </View>
 
             <Controller
               control={control}
@@ -113,6 +122,7 @@ export default function LoginScreen() {
                   autoComplete="email"
                   keyboardType="email-address"
                   placeholder="tú@ejemplo.com"
+                  leftIcon="mail-outline"
                   error={errors.email?.message}
                 />
               )}
@@ -129,6 +139,7 @@ export default function LoginScreen() {
                   secureTextEntry
                   autoComplete="password"
                   placeholder="••••••••"
+                  leftIcon="lock-closed-outline"
                   error={errors.password?.message}
                 />
               )}
@@ -136,29 +147,23 @@ export default function LoginScreen() {
 
             {serverError ? (
               <View style={styles.errorBox}>
-                <Text style={styles.errorBoxText}>⚠ {serverError}</Text>
+                <Ionicons name="alert-circle" size={18} color={c.danger} />
+                <Text style={styles.errorBoxText}>{serverError}</Text>
               </View>
             ) : null}
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                isSubmitting && styles.buttonDisabled,
-                pressed && !isSubmitting && { opacity: 0.86 },
-              ]}
+            <Button
+              label="Iniciar sesión"
               onPress={() => void onSubmit()}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color={c.onPrimary} />
-              ) : (
-                <Text style={styles.buttonText}>Ingresar</Text>
-              )}
-            </Pressable>
+              loading={isSubmitting}
+              iconName="log-in-outline"
+              fullWidth
+              size="lg"
+            />
           </View>
 
           <Link href="/register" style={styles.link}>
-            ¿No tienes cuenta? Regístrate
+            ¿No tienes cuenta? <Text style={{ color: c.primary, fontWeight: FontWeight.bold }}>Regístrate gratis</Text>
           </Link>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -188,46 +193,37 @@ const makeStyles = (c: Palette) =>
       borderColor: c.borderSubtle,
       ...Shadow.sm,
     },
-    cardTitle: {
-      fontSize: Typography.lg,
-      fontWeight: FontWeight.bold,
-      color: c.text,
+    cardHeader: {
+      gap: 4,
       marginBottom: Spacing.xs,
+    },
+    cardTitle: {
+      fontSize: Typography.xl,
+      fontWeight: FontWeight.extrabold,
+      color: c.text,
+      letterSpacing: -0.4,
+    },
+    cardSubtitle: {
+      fontSize: Typography.sm,
+      color: c.textMuted,
     },
     errorBox: {
       backgroundColor: c.dangerSoft,
       borderRadius: Radius.sm,
       padding: Spacing.sm + 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
     },
     errorBoxText: {
       fontSize: Typography.sm,
       color: c.danger,
       fontWeight: FontWeight.medium,
-      textAlign: 'center',
-    },
-    button: {
-      backgroundColor: c.primary,
-      borderRadius: Radius.button,
-      paddingVertical: 15,
-      alignItems: 'center',
-      minHeight: 52,
-      justifyContent: 'center',
-      marginTop: Spacing.xs,
-      ...Shadow.md,
-    },
-    buttonDisabled: {
-      opacity: 0.5,
-    },
-    buttonText: {
-      color: c.onPrimary,
-      fontSize: Typography.md,
-      fontWeight: FontWeight.bold,
-      letterSpacing: 0.3,
+      flex: 1,
     },
     link: {
       textAlign: 'center',
       fontSize: Typography.sm,
-      color: c.primary,
-      fontWeight: FontWeight.semibold,
+      color: c.textMuted,
     },
   });

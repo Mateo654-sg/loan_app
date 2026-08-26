@@ -9,18 +9,19 @@ export type BadgeTone = 'primary' | 'success' | 'danger' | 'warning' | 'neutral'
 interface BadgeProps {
   label: string;
   tone?: BadgeTone;
+  showDot?: boolean;
 }
 
 /**
- * Badge/etiqueta de estado con tono semántico.
- * Se adapta automáticamente al esquema de color del sistema.
+ * Badge/etiqueta de estado estilizada con punto indicador semántico.
  */
-export function Badge({ label, tone = 'neutral' }: BadgeProps) {
+export function Badge({ label, tone = 'neutral', showDot = true }: BadgeProps) {
   const c = usePalette();
   const styles = makeStyles(c);
 
   return (
     <View style={[styles.container, styles[`bg_${tone}`]]}>
+      {showDot ? <View style={[styles.dot, styles[`dot_${tone}`]]} /> : null}
       <Text style={[styles.text, styles[`text_${tone}`]]}>{label}</Text>
     </View>
   );
@@ -33,11 +34,19 @@ const makeStyles = (c: Palette) =>
       paddingHorizontal: 10,
       paddingVertical: 4,
       alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
     },
     text: {
       fontSize: Typography.xs,
       fontWeight: FontWeight.bold,
-      letterSpacing: 0.4,
+      letterSpacing: 0.3,
     },
     // Fondos
     bg_primary: { backgroundColor: c.primarySoft },
@@ -45,6 +54,12 @@ const makeStyles = (c: Palette) =>
     bg_danger: { backgroundColor: c.dangerSoft },
     bg_warning: { backgroundColor: c.warningSoft },
     bg_neutral: { backgroundColor: c.borderSubtle },
+    // Puntos
+    dot_primary: { backgroundColor: c.primary },
+    dot_success: { backgroundColor: c.success },
+    dot_danger: { backgroundColor: c.danger },
+    dot_warning: { backgroundColor: c.warning },
+    dot_neutral: { backgroundColor: c.textMuted },
     // Textos
     text_primary: { color: c.primary },
     text_success: { color: c.success },

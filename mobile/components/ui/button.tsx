@@ -1,4 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -16,11 +18,11 @@ interface ButtonProps {
   disabled?: boolean;
   fullWidth?: boolean;
   leftEmoji?: string;
+  iconName?: keyof typeof Ionicons.glyphMap;
 }
 
 /**
- * Botón reutilizable con variantes, tamaños y feedback táctil.
- * Usa la paleta del tema automáticamente.
+ * Botón reutilizable con gradientes, soporte de íconos vectoriales y feedback táctil.
  */
 export function Button({
   label,
@@ -31,6 +33,7 @@ export function Button({
   disabled = false,
   fullWidth = false,
   leftEmoji,
+  iconName,
 }: ButtonProps) {
   const c = usePalette();
   const styles = makeStyles(c);
@@ -70,11 +73,28 @@ export function Button({
     }
   };
 
+  const iconSize = size === 'sm' ? 16 : size === 'lg' ? 22 : 18;
+  const iconColor = (variant === 'primary' || variant === 'danger' ? c.onPrimary : c.primary);
+
+  const renderInnerContent = () => (
+    loading ? (
+      <ActivityIndicator color={iconColor} size="small" />
+    ) : (
+      <View style={styles.content}>
+        {iconName ? (
+          <Ionicons name={iconName} size={iconSize} color={iconColor} />
+        ) : leftEmoji ? (
+          <Text style={[styles.emoji, getTextSizeStyle()]}>{leftEmoji}</Text>
+        ) : null}
+        <Text style={[styles.text, getTextStyle(), getTextSizeStyle()]}>{label}</Text>
+      </View>
+    )
+  );
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.base,
-        getVariantStyle(),
         getSizeStyle(),
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
@@ -85,17 +105,18 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' || variant === 'danger' ? '#FFFFFF' : c.primary}
-          size="small"
-        />
+      {variant === 'primary' && !isDisabled ? (
+        <LinearGradient
+          colors={c.primaryGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.gradient, getSizeStyle()]}
+        >
+          {renderInnerContent()}
+        </LinearGradient>
       ) : (
-        <View style={styles.content}>
-          {leftEmoji ? (
-            <Text style={[styles.emoji, getTextSizeStyle()]}>{leftEmoji}</Text>
-          ) : null}
-          <Text style={[styles.text, getTextStyle(), getTextSizeStyle()]}>{label}</Text>
+        <View style={[styles.inner, getVariantStyle(), getSizeStyle()]}>
+          {renderInnerContent()}
         </View>
       )}
     </Pressable>
@@ -105,9 +126,21 @@ export function Button({
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     base: {
+      borderRadius: Radius.button,
+      overflow: 'hidden',
+    },
+    inner: {
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: Radius.button,
+      width: '100%',
+    },
+    gradient: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: Radius.button,
+      width: '100%',
+      ...Shadow.md,
     },
     // Variantes
     primary: {
@@ -127,22 +160,22 @@ const makeStyles = (c: Palette) =>
       ...Shadow.sm,
     },
     // Tamaños
-    sizeSm: { minHeight: 36, paddingHorizontal: Spacing.md },
+    sizeSm: { minHeight: 38, paddingHorizontal: Spacing.md },
     sizeMd: { minHeight: 50, paddingHorizontal: Spacing.lg },
     sizeLg: { minHeight: 56, paddingHorizontal: Spacing.xl },
     fullWidth: { alignSelf: 'stretch' },
-    disabled: { opacity: 0.45 },
-    pressed: { opacity: 0.86 },
+    disabled: { opacity: 0.5 },
+    pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
     // Textos
     text: { fontWeight: FontWeight.semibold, letterSpacing: 0.2 },
     textPrimary: { color: c.onPrimary },
     textSecondary: { color: c.primary },
     textGhost: { color: c.primary },
-    textDanger: { color: '#FFFFFF' },
+    textDanger: { color: c.onDanger },
     textSm: { fontSize: Typography.sm },
     textMd: { fontSize: Typography.md },
     textLg: { fontSize: Typography.lg },
     // Layout interno
-    content: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    content: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs + 2 },
     emoji: { fontSize: Typography.base },
   });
