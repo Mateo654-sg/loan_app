@@ -1,11 +1,21 @@
 import { Link } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withDelay,
+} from 'react-native-reanimated';
 
-import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
+import { MoneyDisplay } from '@/components/ui/money-display';
+import { Chip } from '@/components/ui/chip';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
+import { FontWeight, Radius, Shadow, Spacing, Typography, LetterSpacing } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
 import {
@@ -42,7 +52,53 @@ export default function FinanceScreen() {
   const categories = useCategories();
   const cancelTransaction = useCancelTransaction();
 
-  const categoryNameById = new Map(categories.data?.map((c) => [c.id, c.name] as const));
+  const categoryNameById = new Map(categories.data?.map((cat) => [cat.id, cat.name] as const));
+
+  // Animaciones de entrada
+  const headerOpacity = useSharedValue(0);
+  const headerTranslateY = useSharedValue(-20);
+  const summaryOpacity = useSharedValue(0);
+  const summaryTranslateY = useSharedValue(20);
+  const actionsOpacity = useSharedValue(0);
+  const actionsTranslateY = useSharedValue(20);
+  const listOpacity = useSharedValue(0);
+  const listTranslateY = useSharedValue(20);
+
+  useFocusEffect(
+    useCallback(() => {
+      headerOpacity.value = withDelay(50, withSpring(1, { damping: 20, stiffness: 120 }));
+      headerTranslateY.value = withDelay(50, withSpring(0, { damping: 20, stiffness: 120 }));
+
+      summaryOpacity.value = withDelay(150, withSpring(1, { damping: 20, stiffness: 120 }));
+      summaryTranslateY.value = withDelay(150, withSpring(0, { damping: 20, stiffness: 120 }));
+
+      actionsOpacity.value = withDelay(250, withSpring(1, { damping: 20, stiffness: 120 }));
+      actionsTranslateY.value = withDelay(250, withSpring(0, { damping: 20, stiffness: 120 }));
+
+      listOpacity.value = withDelay(350, withSpring(1, { damping: 20, stiffness: 120 }));
+      listTranslateY.value = withDelay(350, withSpring(0, { damping: 20, stiffness: 120 }));
+    }, [])
+  );
+
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateY: headerTranslateY.value }],
+  }));
+
+  const summaryAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: summaryOpacity.value,
+    transform: [{ translateY: summaryTranslateY.value }],
+  }));
+
+  const actionsAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: actionsOpacity.value,
+    transform: [{ translateY: actionsTranslateY.value }],
+  }));
+
+  const listAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: listOpacity.value,
+    transform: [{ translateY: listTranslateY.value }],
+  }));
 
   const confirmCancel = (transaction: TransactionDto) => {
     Alert.alert(
@@ -64,17 +120,15 @@ export default function FinanceScreen() {
 
   const renderItem = ({ item }: { item: TransactionDto }) => {
     const isIncome = item.type === 'INCOME';
-    const amountColor = isIncome ? c.success : c.danger;
-    const amountPrefix = isIncome ? '＋' : '−';
     const isCancelled = item.status === 'CANCELLED';
 
     return (
-      <View style={[styles.rowCard, isCancelled && { opacity: 0.45 }]}>
-        {/* Ícono de tipo */}
+      <View style={[styles.rowCard, { backgroundColor: c.surface, borderColor: c.borderSubtle }, isCancelled && { opacity: 0.45 }]}>
+        {/* Ícono de tipo con gradiente */}
         <View style={[styles.txIcon, { backgroundColor: isIncome ? c.successSoft : c.dangerSoft }]}>
           <Ionicons
             name={isIncome ? 'arrow-up' : 'arrow-down'}
-            size={18}
+            size={20}
             color={isIncome ? c.success : c.danger}
           />
         </View>
@@ -87,20 +141,20 @@ export default function FinanceScreen() {
             {isCancelled ? ' · CANCELADA' : ''}
           </Text>
         </View>
-        <Text style={[styles.rowAmount, { color: amountColor }]}>
-          {amountPrefix}{formatMoneyCop(item.amount)}
-        </Text>
-        {item.status === 'ACTIVE' ? (
-          <Pressable
-            onPress={() => confirmCancel(item)}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Cancelar transacción"
-            style={({ pressed }) => [{ opacity: pressed ? 0.5 : 0.7, paddingLeft: 4 }]}
-          >
-            <Ionicons name="close-circle-outline" size={18} color={c.textMuted} />
-          </Pressable>
-        ) : null}
+        <View style={styles.rowRight}>
+          <MoneyDisplay value={item.amount} size="md" tone={isIncome ? 'success' : 'danger'} weight="extrabold" showCurrency={false} prefix={isIncome ? '＋' : '−'} />
+          {item.status === 'ACTIVE' ? (
+            <Pressable
+              onPress={() => confirmCancel(item)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar transacción"
+              style={({ pressed }) => [{ opacity: pressed ? 0.5 : 0.7, paddingLeft: 4 }]}
+            >
+              <Ionicons name="close-circle" size={20} color={c.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     );
   };
@@ -110,10 +164,11 @@ export default function FinanceScreen() {
     if (transactions.isError) {
       return (
         <View style={styles.errorBox}>
-          <Ionicons name="cloud-offline-outline" size={32} color={c.danger} />
-          <Text style={styles.errorText}>
-            Error al cargar transacciones. Verifica la conexión.
-          </Text>
+          <View style={styles.errorIconBox}>
+            <Ionicons name="cloud-offline" size={36} color={c.danger} />
+          </View>
+          <Text style={styles.errorText}>Error al cargar transacciones</Text>
+          <Text style={styles.errorSubtext}>Verifica tu conexión e inténtalo de nuevo</Text>
         </View>
       );
     }
@@ -121,9 +176,8 @@ export default function FinanceScreen() {
       return (
         <View style={styles.emptyBox}>
           <View style={styles.emptyIconBox}>
-            <Ionicons name="wallet-outline" size={40} color={c.textMuted} />
+            <Ionicons name="wallet" size={44} color={c.textMuted} />
           </View>
-
           <Text style={styles.emptyText}>Sin transacciones en este filtro</Text>
         </View>
       );
@@ -144,55 +198,57 @@ export default function FinanceScreen() {
     return null;
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        {/* Resumen de saldo */}
+  const headerComponent = (
+    <View style={{ gap: Spacing.lg, paddingBottom: Spacing.md }}>
+      {/* Header animado */}
+      <Animated.View style={[styles.headerSection, headerAnimatedStyle]}>
+        <Text style={styles.pageTitle}>Finanzas</Text>
+        <Text style={styles.pageSubtitle}>Controla tus ingresos, gastos y metas</Text>
+      </Animated.View>
+
+      {/* Resumen de saldo — Premium */}
+      <Animated.View style={[styles.summarySection, summaryAnimatedStyle]}>
         {summary.isPending ? (
-          <ActivityIndicator color={c.primary} style={{ padding: Spacing.md }} />
+          <View style={styles.summaryGrid}>
+            <Skeleton height={120} variant="card" />
+            <Skeleton height={100} variant="card" />
+            <Skeleton height={100} variant="card" />
+          </View>
         ) : summary.data ? (
-          <View style={styles.summaryRow}>
-            {/* Saldo — prominente con gradiente */}
+          <View style={styles.summaryGrid}>
             <LinearGradient
-              colors={c.primaryGradient}
+              colors={c.heroGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.balanceCard}
             >
               <Text style={styles.balanceLabel}>Saldo actual</Text>
-              <Text style={styles.balanceValue} numberOfLines={1}>
-                {formatMoneyCop(summary.data.balance)}
-              </Text>
+              <MoneyDisplay value={summary.data.balance} size="xl" weight="black" tone="inverse" />
             </LinearGradient>
-
-            {/* Ingresos y gastos */}
             <View style={styles.summaryCol}>
               <View style={[styles.miniCard, { backgroundColor: c.successSoft, borderColor: c.success + '30' }]}>
                 <View style={styles.miniHeader}>
-                  <Ionicons name="arrow-up-circle" size={14} color={c.success} />
+                  <Ionicons name="arrow-up-circle" size={16} color={c.success} />
                   <Text style={[styles.miniLabel, { color: c.textMuted }]}>Ingresos</Text>
                 </View>
-                <Text style={[styles.miniValue, { color: c.success }]} numberOfLines={1}>
-                  {formatMoneyCop(summary.data.total_income)}
-                </Text>
+                <MoneyDisplay value={summary.data.total_income} size="lg" tone="success" weight="extrabold" />
               </View>
-
               <View style={[styles.miniCard, { backgroundColor: c.dangerSoft, borderColor: c.danger + '30' }]}>
                 <View style={styles.miniHeader}>
-                  <Ionicons name="arrow-down-circle" size={14} color={c.danger} />
+                  <Ionicons name="arrow-down-circle" size={16} color={c.danger} />
                   <Text style={[styles.miniLabel, { color: c.textMuted }]}>Gastos</Text>
                 </View>
-                <Text style={[styles.miniValue, { color: c.danger }]} numberOfLines={1}>
-                  {formatMoneyCop(summary.data.total_expenses)}
-                </Text>
+                <MoneyDisplay value={summary.data.total_expenses} size="lg" tone="danger" weight="extrabold" />
               </View>
             </View>
           </View>
         ) : (
-          <Text style={styles.errorText}>Error al cargar el resumen.</Text>
+          <Text style={styles.errorText}>Error al cargar el resumen</Text>
         )}
+      </Animated.View>
 
-        {/* Botón principal de agregar movimiento */}
+      {/* Botón principal de agregar movimiento */}
+      <Animated.View style={[styles.actionSection, actionsAnimatedStyle]}>
         <Link href="/(app)/finance/new-transaction" asChild>
           <Pressable
             style={({ pressed }) => [
@@ -206,22 +262,21 @@ export default function FinanceScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.primaryButtonGradient}
             >
-              <Ionicons name="add-circle-outline" size={20} color={c.onPrimary} />
+              <Ionicons name="add-circle" size={22} color={c.onPrimary} />
               <Text style={styles.primaryButtonText}>Nuevo movimiento</Text>
             </LinearGradient>
           </Pressable>
         </Link>
-
-        {/* Links secundarios */}
-        <View style={styles.linksRow}>
+        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
           <Link href="/(app)/finance/categories" asChild>
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
+                { backgroundColor: c.surface, borderColor: c.borderSubtle },
                 pressed && { opacity: 0.8 },
               ]}
             >
-              <Ionicons name="pricetags-outline" size={16} color={c.primary} />
+              <Ionicons name="pricetags" size={18} color={c.primary} />
               <Text style={styles.secondaryText}>Categorías</Text>
             </Pressable>
           </Link>
@@ -229,51 +284,49 @@ export default function FinanceScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
+                { backgroundColor: c.surface, borderColor: c.borderSubtle },
                 pressed && { opacity: 0.8 },
               ]}
             >
-              <Ionicons name="flag-outline" size={16} color={c.accent} />
+              <Ionicons name="flag" size={18} color={c.accent} />
               <Text style={styles.secondaryText}>Metas</Text>
             </Pressable>
           </Link>
         </View>
+      </Animated.View>
 
-        {/* Filtros */}
-        <View style={styles.filterRow}>
+      {/* Filtros */}
+      <Animated.View style={listAnimatedStyle}>
+        <View style={{ flexDirection: 'row', gap: Spacing.xs, paddingHorizontal: Spacing.lg }}>
           {(['TODOS', 'INGRESOS', 'GASTOS'] as TypeFilter[]).map((value) => (
-            <Pressable
+            <Chip
               key={value}
-              style={({ pressed }) => [
-                styles.chip,
-                typeFilter === value && styles.chipActive,
-                pressed && { opacity: 0.8 },
-              ]}
+              label={FILTER_LABELS[value]}
+              selected={typeFilter === value}
               onPress={() => setTypeFilter(value)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  typeFilter === value && styles.chipTextActive,
-                ]}
-              >
-                {FILTER_LABELS[value]}
-              </Text>
-            </Pressable>
+              variant="primary"
+            />
           ))}
         </View>
+      </Animated.View>
+    </View>
+  );
 
-        {/* Lista de transacciones */}
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <Animated.View style={[{ flex: 1 }, listAnimatedStyle]}>
         <FlatList
           data={allItems}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ gap: Spacing.xs + 2, paddingBottom: 20 }}
+          contentContainerStyle={{ gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingBottom: 90 + insets.bottom }}
+          ListHeaderComponent={headerComponent}
           ListFooterComponent={listFooter}
           onRefresh={() => void transactions.refetch()}
           refreshing={transactions.isRefetching}
           showsVerticalScrollIndicator={false}
         />
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -281,76 +334,67 @@ export default function FinanceScreen() {
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: c.background },
-    container: {
-      flex: 1,
-      gap: Spacing.md,
-      paddingHorizontal: Spacing.lg,
-      paddingTop: Spacing.md,
-    },
+    container: { flex: 1, gap: Spacing.xl, paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
 
-    // Resumen
-    summaryRow: { flexDirection: 'row', gap: Spacing.sm },
+    // Header
+    headerSection: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, gap: Spacing.xs },
+    pageTitle: { fontSize: Typography.xxxl, fontWeight: FontWeight.black, color: c.text, letterSpacing: LetterSpacing.tight },
+    pageSubtitle: { fontSize: Typography.sm, color: c.textMuted, fontWeight: FontWeight.medium },
+
+    // Summary
+    summarySection: { paddingHorizontal: Spacing.lg, gap: Spacing.md },
+    summaryGrid: { flexDirection: 'row', gap: Spacing.sm },
+
     balanceCard: {
-      flex: 1.2,
-      borderRadius: Radius.card,
-      padding: Spacing.md,
-      gap: 6,
+      flex: 1.3,
+      borderRadius: Radius.cardLg,
+      padding: Spacing.lg,
+      gap: Spacing.sm,
       justifyContent: 'center',
-      ...Shadow.md,
+      ...Shadow.xl,
     },
     balanceLabel: {
-      fontSize: Typography.xs,
+      fontSize: Typography.sm,
       color: 'rgba(255,255,255,0.8)',
       fontWeight: FontWeight.semibold,
-      letterSpacing: 0.4,
+      letterSpacing: LetterSpacing.wide,
     },
-    balanceValue: {
-      fontSize: Typography.lg,
-      fontWeight: FontWeight.black,
-      color: c.onPrimary,
-    },
-    summaryCol: { flex: 1, gap: Spacing.xs + 2 },
+    summaryCol: { flex: 1, gap: Spacing.sm },
     miniCard: {
       flex: 1,
       borderRadius: Radius.card,
-      paddingVertical: Spacing.xs + 4,
-      paddingHorizontal: Spacing.sm + 4,
-      gap: 2,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      gap: Spacing.xs,
       borderWidth: 1,
-      ...Shadow.sm,
+      ...Shadow.md,
     },
-    miniHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
+    miniHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
     miniLabel: { fontSize: Typography.xs, fontWeight: FontWeight.semibold },
-    miniValue: { fontSize: Typography.sm, fontWeight: FontWeight.extrabold },
+    miniValue: { fontSize: Typography.md, fontWeight: FontWeight.extrabold },
 
-    // Botones
+    // Actions
+    actionSection: { paddingHorizontal: Spacing.lg, gap: Spacing.md },
     primaryButton: {
       borderRadius: Radius.button,
       overflow: 'hidden',
-      ...Shadow.md,
+      ...Shadow.lg,
     },
     primaryButtonGradient: {
-      minHeight: 50,
+      minHeight: 56,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: Spacing.xs,
-      paddingHorizontal: Spacing.lg,
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.xl,
     },
-    primaryButtonText: { color: c.onPrimary, fontWeight: FontWeight.bold, fontSize: Typography.base },
-
+    primaryButtonText: { color: c.onPrimary, fontWeight: FontWeight.bold, fontSize: Typography.base, letterSpacing: LetterSpacing.wide },
     linksRow: { flexDirection: 'row', gap: Spacing.sm },
     secondaryButton: {
       flex: 1,
       borderRadius: Radius.button,
       borderWidth: 1,
-      borderColor: c.borderSubtle,
-      backgroundColor: c.surface,
-      minHeight: 44,
+      minHeight: 48,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -359,60 +403,56 @@ const makeStyles = (c: Palette) =>
     },
     secondaryText: { fontSize: Typography.sm, fontWeight: FontWeight.bold, color: c.text },
 
-    // Chips
+    // Filter
+    filterSection: { paddingHorizontal: Spacing.lg, gap: Spacing.md },
     filterRow: { flexDirection: 'row', gap: Spacing.xs },
-    chip: {
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: c.border,
-      paddingHorizontal: Spacing.md,
-      minHeight: 34,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.surface,
-    },
-    chipActive: { backgroundColor: c.primary, borderColor: c.primary },
-    chipText: { fontSize: Typography.sm, fontWeight: FontWeight.semibold, color: c.textMuted },
-    chipTextActive: { color: c.onPrimary, fontWeight: FontWeight.bold },
 
-    // Transacciones
+    // Transactions
+    listSection: { paddingHorizontal: Spacing.lg, gap: Spacing.md },
     rowCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: Spacing.sm,
+      gap: Spacing.md,
       padding: Spacing.md,
       borderRadius: Radius.card,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.borderSubtle,
-      ...Shadow.sm,
+      ...Shadow.md,
     },
     txIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
+      width: 42,
+      height: 42,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    rowMain: { flex: 1, gap: 3 },
+    rowMain: { flex: 1, gap: Spacing.xs },
     rowTitle: { fontSize: Typography.base, fontWeight: FontWeight.bold, color: c.text },
     rowSubtitle: { fontSize: Typography.xs, color: c.textMuted, fontWeight: FontWeight.medium },
-    rowAmount: { fontSize: Typography.base, fontWeight: FontWeight.extrabold },
+    rowRight: { alignItems: 'flex-end', gap: Spacing.sm },
 
     // Footer
-    loadMore: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginVertical: Spacing.sm },
+    loadMore: { minHeight: 52, alignItems: 'center', justifyContent: 'center', marginVertical: Spacing.md, borderRadius: Radius.button },
     loadMoreText: { color: c.primary, fontWeight: FontWeight.bold, fontSize: Typography.sm },
-    emptyBox: { alignItems: 'center', gap: Spacing.xs, paddingVertical: Spacing.xl },
+    emptyBox: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxl, paddingHorizontal: Spacing.xl },
     emptyIconBox: {
-      width: 64,
-      height: 64,
-      borderRadius: 20,
+      width: 72,
+      height: 72,
+      borderRadius: 36,
       backgroundColor: c.chipBg,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: Spacing.xs,
+      marginBottom: Spacing.sm,
     },
-    emptyText: { textAlign: 'center', color: c.textMuted, fontSize: Typography.sm, fontWeight: FontWeight.medium },
-    errorBox: { alignItems: 'center', gap: Spacing.xs, padding: Spacing.lg },
-    errorText: { color: c.danger, textAlign: 'center', fontWeight: FontWeight.medium },
+    emptyText: { color: c.textMuted, fontSize: Typography.sm, fontWeight: FontWeight.medium, textAlign: 'center' },
+    errorBox: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xl, paddingHorizontal: Spacing.xl },
+    errorIconBox: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: c.dangerSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.sm,
+    },
+    errorText: { color: c.text, fontSize: Typography.lg, fontWeight: FontWeight.bold, textAlign: 'center' },
+    errorSubtext: { color: c.textMuted, fontSize: Typography.sm, textAlign: 'center' },
   });

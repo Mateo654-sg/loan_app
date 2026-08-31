@@ -1,14 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  withSpring,
+} from 'react-native-reanimated';
 
-import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
+import { Animation, FontWeight, LetterSpacing, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
 import { hapticTap } from '@/utils/haptics';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold' | 'outline';
+type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -21,12 +26,10 @@ interface ButtonProps {
   disabled?: boolean;
   fullWidth?: boolean;
   iconName?: keyof typeof Ionicons.glyphMap;
+  iconPosition?: 'left' | 'right';
+  haptic?: boolean;
 }
 
-/**
- * Botón reutilizable con variantes, tamaños, haptics y animación
- * de escala al presionar. Usa la paleta del tema automáticamente.
- */
 export function Button({
   label,
   onPress,
@@ -36,53 +39,70 @@ export function Button({
   disabled = false,
   fullWidth = false,
   iconName,
+  iconPosition = 'left',
+  haptic = true,
 }: ButtonProps) {
   const c = usePalette();
   const styles = makeStyles(c);
   const isDisabled = disabled || loading;
 
-  // Animación de presión: escala 1 → 0.97 → 1
   const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
+    opacity: opacity.value,
   }));
 
   const handlePress = () => {
-    hapticTap();
+    if (haptic) hapticTap();
     onPress();
   };
 
   const getVariantStyle = () => {
     switch (variant) {
-      case 'primary': return styles.primary;
-      case 'secondary': return styles.secondary;
-      case 'ghost': return styles.ghost;
-      case 'danger': return styles.danger;
-    }
-  };
-
-  const getTextStyle = () => {
-    switch (variant) {
-      case 'primary': return styles.textPrimary;
-      case 'secondary': return styles.textSecondary;
-      case 'ghost': return styles.textGhost;
-      case 'danger': return styles.textDanger;
+      case 'primary':
+        return styles.primary;
+      case 'secondary':
+        return styles.secondary;
+      case 'ghost':
+        return styles.ghost;
+      case 'danger':
+        return styles.danger;
+      case 'gold':
+        return styles.gold;
+      case 'outline':
+        return styles.outline;
     }
   };
 
   const getSizeStyle = () => {
     switch (size) {
-      case 'sm': return styles.sizeSm;
-      case 'md': return styles.sizeMd;
-      case 'lg': return styles.sizeLg;
+      case 'sm':
+        return styles.sizeSm;
+      case 'md':
+        return styles.sizeMd;
+      case 'lg':
+        return styles.sizeLg;
+      case 'xl':
+        return styles.sizeXl;
     }
   };
 
-  const getTextSizeStyle = () => {
-    switch (size) {
-      case 'sm': return styles.textSm;
-      case 'md': return styles.textMd;
-      case 'lg': return styles.textLg;
+  const getTextColor = () => {
+    switch (variant) {
+      case 'primary':
+        return c.onPrimary;
+      case 'secondary':
+        return c.primary;
+      case 'ghost':
+        return c.primary;
+      case 'danger':
+        return c.onDanger;
+      case 'gold':
+        return c.textInverse;
+      case 'outline':
+        return c.primary;
     }
   };
 
@@ -98,38 +118,48 @@ export function Button({
       ]}
       onPress={handlePress}
       onPressIn={() => {
-        scale.value = withTiming(0.97, { duration: 90 });
+        scale.value = withTiming(0.96, { duration: Animation.fast });
+        opacity.value = withTiming(0.9, { duration: Animation.fast });
       }}
       onPressOut={() => {
-        scale.value = withTiming(1, { duration: 140 });
+        scale.value = withSpring(1, Animation.spring);
+        opacity.value = withTiming(1, { duration: Animation.fast });
       }}
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' || variant === 'danger' ? c.onPrimary : c.primary}
+          color={variant === 'primary' || variant === 'danger' || variant === 'gold' ? c.onPrimary : c.primary}
           size="small"
         />
       ) : (
         <View style={styles.row}>
-          {iconName ? (
-            <Ionicons name={iconName} size={Typography.md + 2} color={getTextColor(c, variant)} />
-          ) : null}
-          <Text style={[styles.text, getTextStyle(), getTextSizeStyle()]}>{label}</Text>
+          {iconName && iconPosition === 'left' && (
+            <Ionicons name={iconName} size={Typography.md + 2} color={getTextColor()} />
+          )}
+          <Text style={[styles.text, { color: getTextColor() }, getTextSizeStyle(size)]}>{label}</Text>
+          {iconName && iconPosition === 'right' && (
+            <Ionicons name={iconName} size={Typography.md + 2} color={getTextColor()} />
+          )}
         </View>
       )}
     </AnimatedPressable>
   );
 }
 
-function getTextColor(c: Palette, variant: ButtonVariant): string {
-  switch (variant) {
-    case 'primary': return c.onPrimary;
-    case 'secondary': return c.primary;
-    case 'ghost': return c.primary;
-    case 'danger': return c.onDanger;
+function getTextSizeStyle(size: ButtonSize): any {
+  switch (size) {
+    case 'sm':
+      return { fontSize: 12 };
+    case 'md':
+      return { fontSize: 14 };
+    case 'lg':
+      return { fontSize: 16 };
+    case 'xl':
+      return { fontSize: 18 };
   }
 }
 
@@ -139,8 +169,9 @@ const makeStyles = (c: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: Radius.button,
+      flexDirection: 'row',
     },
-    // Variantes
+    // Variantes premium
     primary: {
       backgroundColor: c.primary,
       ...Shadow.md,
@@ -157,12 +188,22 @@ const makeStyles = (c: Palette) =>
       backgroundColor: c.danger,
       ...Shadow.sm,
     },
-    // Tamaños
-    sizeSm: { minHeight: 38 },
-    sizeMd: { minHeight: 50 },
-    sizeLg: { minHeight: 56 },
+    gold: {
+      backgroundColor: c.gold,
+      ...Shadow.gold,
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderColor: c.primary,
+    },
+    // Tamaños — min 44px per DESIGN_SYSTEM §62
+    sizeSm: { minHeight: 44, paddingHorizontal: Spacing.md },
+    sizeMd: { minHeight: 52, paddingHorizontal: Spacing.lg },
+    sizeLg: { minHeight: 58, paddingHorizontal: Spacing.xl },
+    sizeXl: { minHeight: 64, paddingHorizontal: Spacing.xxl },
     fullWidth: { alignSelf: 'stretch', width: '100%' },
-    disabled: { opacity: 0.45 },
+    disabled: { opacity: 0.4 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -170,12 +211,9 @@ const makeStyles = (c: Palette) =>
       gap: Spacing.xs,
     },
     // Textos
-    text: { fontWeight: FontWeight.semibold, letterSpacing: 0.2, textAlign: 'center' },
-    textPrimary: { color: c.onPrimary },
-    textSecondary: { color: c.primary },
-    textGhost: { color: c.primary },
-    textDanger: { color: c.onDanger },
+    text: { fontWeight: FontWeight.semibold, letterSpacing: LetterSpacing.wide, textAlign: 'center' },
     textSm: { fontSize: Typography.sm },
     textMd: { fontSize: Typography.base },
-    textLg: { fontSize: Typography.lg },
+    textLg: { fontSize: Typography.md },
+    textXl: { fontSize: Typography.lg },
   });

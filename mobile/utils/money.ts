@@ -26,8 +26,8 @@ export function formatIsoDateShort(iso: string): string {
   const [year, month, day] = iso.split('-');
   if (!year || !month || !day) return iso;
   const monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
   ];
   const monthIndex = parseInt(month, 10) - 1;
   return `${day} ${monthNames[monthIndex] ?? month} ${year}`;

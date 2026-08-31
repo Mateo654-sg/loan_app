@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View, ViewProps } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Radius, Shadow, Spacing } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -6,13 +7,11 @@ import type { Palette } from '@/theme/palette';
 
 interface CardProps extends ViewProps {
   onPress?: () => void;
-  variant?: 'flat' | 'elevated' | 'bordered';
+  variant?: 'flat' | 'elevated' | 'bordered' | 'glass' | 'gradient' | 'premium';
   padding?: number;
+  children: React.ReactNode;
 }
 
-/**
- * Componente Card contenedor estándar con soporte para elevación, bordes y presión.
- */
 export function Card({
   children,
   onPress,
@@ -32,8 +31,18 @@ export function Card({
         return styles.bordered;
       case 'flat':
         return styles.flat;
+      case 'glass':
+        return styles.glass;
+      case 'gradient':
+        return styles.gradient;
+      case 'premium':
+        return styles.premium;
     }
   };
+
+  const Content = ({ style: contentStyle }: { style?: any }) => (
+    <View style={[styles.content, { padding }, contentStyle]}>{children}</View>
+  );
 
   if (onPress) {
     return (
@@ -41,15 +50,48 @@ export function Card({
         style={({ pressed }) => [
           styles.base,
           getVariantStyle(),
-          { padding },
           pressed && styles.pressed,
           style,
         ]}
         onPress={onPress}
         {...rest}
       >
-        {children}
+        <Content />
       </Pressable>
+    );
+  }
+
+  if (variant === 'gradient') {
+    return (
+      <LinearGradient
+        colors={c.primaryGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.base, getVariantStyle(), style]}
+      >
+        <Content />
+      </LinearGradient>
+    );
+  }
+
+  if (variant === 'premium') {
+    return (
+      <LinearGradient
+        colors={c.primaryGradientDeep}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.base, getVariantStyle(), style]}
+      >
+        <Content />
+      </LinearGradient>
+    );
+  }
+
+  if (variant === 'glass') {
+    return (
+      <View style={[styles.base, getVariantStyle(), style]} {...rest}>
+        <Content />
+      </View>
     );
   }
 
@@ -66,6 +108,9 @@ const makeStyles = (c: Palette) =>
       borderRadius: Radius.card,
       backgroundColor: c.surface,
     },
+    content: {
+      // padding applied via prop
+    },
     bordered: {
       borderWidth: 1,
       borderColor: c.borderSubtle,
@@ -77,6 +122,18 @@ const makeStyles = (c: Palette) =>
     },
     flat: {
       backgroundColor: c.primarySofter,
+    },
+    glass: {
+      backgroundColor: c.surfaceGlass,
+      borderWidth: 1,
+      borderColor: c.glassBorder,
+      ...Shadow.sm,
+    },
+    gradient: {
+      ...Shadow.lg,
+    },
+    premium: {
+      ...Shadow.xl,
     },
     pressed: {
       opacity: 0.85,
