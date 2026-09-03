@@ -61,7 +61,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
   if (client.isError || !client.data) {
     return (
       <Centered>
-        <Text style={styles.error}>Could not load this customer.</Text>
+        <Text style={styles.error}>No se pudo cargar este cliente.</Text>
       </Centered>
     );
   }
@@ -70,11 +70,11 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
 
   const confirmDeactivate = () => {
     Alert.alert(
-      `Deactivate ${data.full_name}?`,
-      'Existing loans and history remain. The customer will not be selectable for new loans.',
+      `¿Desactivar a ${data.full_name}?`,
+      'Los préstamos e historial existentes permanecen. El cliente no podrá seleccionarse para nuevos préstamos.',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Deactivate', style: 'destructive', onPress: () => deactivate.mutate(data.id) },
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Desactivar', style: 'destructive', onPress: () => deactivate.mutate(data.id) },
       ],
     );
   };
@@ -86,7 +86,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
       relationship: refRelationship,
     });
     if (!parsed.success) {
-      setRefError(parsed.error.issues[0]?.message ?? 'Invalid data');
+      setRefError(parsed.error.issues[0]?.message ?? 'Datos inválidos');
       return;
     }
     setRefError(null);
@@ -104,7 +104,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
       setRefRelationship('');
     } catch (error) {
       setRefError(
-        error instanceof ApiError ? error.message : 'Unexpected error. Please try again.'
+        error instanceof ApiError ? error.message : 'Error inesperado. Intenta de nuevo.'
       );
     }
   };
@@ -138,7 +138,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
               <Text style={styles.note}>Las métricas de préstamos se activan con el módulo de préstamos.</Text>
             </>
           ) : (
-            <Text style={styles.error}>Could not load the summary.</Text>
+            <Text style={styles.error}>No se pudo cargar el resumen.</Text>
           )}
         </View>
 
@@ -180,7 +180,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
             <View style={styles.row}>
               <TextInput
                 style={[styles.input, styles.flex1]}
-                placeholder="Phone"
+                placeholder="Teléfono"
                 placeholderTextColor={c.textMuted}
                 value={refPhone}
                 onChangeText={setRefPhone}
@@ -213,7 +213,7 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
 
         <Link href="/(app)/finance/new-transaction" asChild>
           <Pressable style={styles.secondaryLink}>
-            <Text style={styles.secondaryLinkText}>Go to Finanzas</Text>
+            <Text style={styles.secondaryLinkText}>Ir a Finanzas</Text>
           </Pressable>
         </Link>
       </ScrollView>

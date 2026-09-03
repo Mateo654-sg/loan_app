@@ -39,7 +39,7 @@ export default function GoalsScreen() {
       target_date: targetDate || '',
     });
     if (!parsed.success) {
-      setCreateError(parsed.error.issues[0]?.message ?? 'Invalid data');
+      setCreateError(parsed.error.issues[0]?.message ?? 'Datos inválidos');
       return;
     }
 
@@ -55,7 +55,7 @@ export default function GoalsScreen() {
       setTargetDate('');
     } catch (error) {
       setCreateError(
-        error instanceof ApiError ? error.message : 'Unexpected error. Please try again.'
+        error instanceof ApiError ? error.message : 'Error inesperado. Intenta de nuevo.'
       );
     }
   };
@@ -78,7 +78,7 @@ export default function GoalsScreen() {
       setContributionAmount('');
     } catch (error) {
       setContributionError(
-        error instanceof ApiError ? error.message : 'Unexpected error. Please try again.'
+        error instanceof ApiError ? error.message : 'Error inesperado. Intenta de nuevo.'
       );
     }
   };

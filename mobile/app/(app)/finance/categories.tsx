@@ -38,7 +38,7 @@ export default function CategoriesScreen() {
       setNewName('');
     } catch (error) {
       setServerError(
-        error instanceof ApiError ? error.message : 'Unexpected error. Please try again.'
+        error instanceof ApiError ? error.message : 'Error inesperado. Intenta de nuevo.'
       );
     }
   };
@@ -48,7 +48,7 @@ export default function CategoriesScreen() {
       `Desactivar "${name}"?`,
       'It will no longer be selectable for new transactions. Historical records are preserved.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Desactivar',
           style: 'destructive',

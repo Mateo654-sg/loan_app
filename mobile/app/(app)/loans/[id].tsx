@@ -106,16 +106,16 @@ function PaymentCard({ payment, onReverse }: { payment: PaymentDto; onReverse: (
         </Text>
       </View>
       <Text style={styles.note}>
-        LF {formatMoneyCop(payment.allocation.late_fee)} · I{' '}
-        {formatMoneyCop(payment.allocation.interest)} · Cap. {' '}
+        Mora: {formatMoneyCop(payment.allocation.late_fee)} · Interés:{' '}
+        {formatMoneyCop(payment.allocation.interest)} · Cap.:{' '}
         {formatMoneyCop(payment.allocation.principal)}
         {parseFloat(payment.allocation.credit) > 0
-          ? ` · credit ${formatMoneyCop(payment.allocation.credit)}`
+          ? ` · Crédito: ${formatMoneyCop(payment.allocation.credit)}`
           : ''}
       </Text>
       {isPosted ? (
         <Pressable onPress={onReverse} hitSlop={6} style={{ alignSelf: 'flex-end' }}>
-          <Text style={{ color: c.danger, fontSize: 13 }}>Reverse</Text>
+          <Text style={{ color: c.danger, fontSize: 13 }}>Reversar</Text>
         </Pressable>
       ) : null}
     </View>
@@ -184,11 +184,11 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
     setPaymentError(null);
     const parsedAmount = amount.trim();
     if (!parsedAmount || isNaN(parseFloat(parsedAmount)) || parseFloat(parsedAmount) <= 0) {
-      setPaymentError('Enter a valid amount greater than zero.');
+      setPaymentError('Ingresa un monto válido mayor a cero.');
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
-      setPaymentError('Use the YYYY-MM-DD date format.');
+      setPaymentError('Usa el formato AAAA-MM-DD para la fecha.');
       return;
     }
 
@@ -223,7 +223,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
     } catch (error) {
       hapticError();
       setPaymentError(
-        error instanceof Error ? error.message : 'Unexpected error. Please try again.'
+        error instanceof Error ? error.message : 'Error inesperado. Intenta de nuevo.'
       );
     }
   };
@@ -237,7 +237,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
   const submitReversal = async () => {
     if (!reversingId) return;
     if (reversalReason.trim().length === 0) {
-      setReversalError('A reversal reason is required.');
+      setReversalError('El motivo de la reversa es obligatorio.');
       return;
     }
     try {
@@ -250,7 +250,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
       setReversalReason('');
     } catch (error) {
       setReversalError(
-        error instanceof Error ? error.message : 'Unexpected error. Please try again.'
+        error instanceof Error ? error.message : 'Error inesperado. Intenta de nuevo.'
       );
     }
   };
@@ -262,8 +262,8 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
           <View>
             <Text style={styles.name}>{data.client_name}</Text>
             <Text style={styles.meta}>
-              {formatMoneyCop(data.principal)} · {data.number_of_installments} installments ·{' '}
-              {data.amortization_type === 'FRENCH' ? 'French' : 'Fixed'} ·{' '}
+              {formatMoneyCop(data.principal)} · {data.number_of_installments} cuotas ·{' '}
+              Capital fijo ·{' '}
               {data.interest_rate}% {data.interest_period.toLowerCase()}
             </Text>
           </View>
@@ -313,7 +313,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
                   autoCapitalize="none"
                 />
                 <View>
-                  <Text style={styles.fieldLabel}>Method</Text>
+                  <Text style={styles.fieldLabel}>Método de pago</Text>
                   <View style={styles.chipWrap}>
                     {METHODS.map((option) => (
                       <Pressable
@@ -377,7 +377,7 @@ function MetricRow({ label, value, bold }: { label: string; value: string; bold?
 
         {reversingId ? (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Reverse payment</Text>
+            <Text style={styles.sectionTitle}>Reversar pago</Text>
             <FormInput
               label="Motivo (obligatorio)"
               value={reversalReason}
