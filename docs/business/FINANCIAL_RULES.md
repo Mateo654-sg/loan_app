@@ -76,7 +76,7 @@ float
 Example:
 
 ```text
-100000.00
+100,000.00
 ```
 
 is a valid monetary value.
@@ -161,20 +161,20 @@ amount = 500000
 means:
 
 ```text
-+500000
++500,000
 ```
 
 while:
 
 ```text
 EXPENSE
-amount = 500000
+amount = 500,000
 ```
 
 means:
 
 ```text
--500000
+-500,000
 ```
 
 The database should not require negative amounts for expenses.

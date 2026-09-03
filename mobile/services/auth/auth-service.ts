@@ -69,6 +69,29 @@ export async function fetchCurrentUser(): Promise<UserDto> {
   return apiRequest<UserDto>('/auth/me');
 }
 
+export async function updateUserProfile(data: { full_name: string }): Promise<UserDto> {
+  const updated = await apiRequest<UserDto>('/auth/me', {
+    method: 'PUT',
+    body: data,
+  });
+  const store = useAuthStore.getState();
+  if (store.accessToken) {
+    useAuthStore.getState().setSession({
+      user: updated,
+      accessToken: store.accessToken,
+      refreshToken: store.refreshToken,
+    });
+  }
+  return updated;
+}
+
+export async function changePassword(data: { current_password: string; new_password: string }): Promise<void> {
+  await apiRequest<void>('/auth/change-password', {
+    method: 'POST',
+    body: data,
+  });
+}
+
 export async function logoutUser(): Promise<void> {
   // Server-side logout is stateless in v1.0 (204). Local invalidation is
   // what actually ends the session (SECURITY.md §11).

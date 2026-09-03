@@ -1,11 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 
 import { Animation, FontWeight, LetterSpacing, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
@@ -45,10 +40,8 @@ export function Button({
   const c = usePalette();
   const styles = makeStyles(c);
   const isDisabled = disabled || loading;
-
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
-
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
@@ -100,26 +93,21 @@ export function Button({
       case 'danger':
         return c.onDanger;
       case 'gold':
-        return c.textInverse;
+        return '#1A1500';
       case 'outline':
         return c.primary;
     }
   };
 
+  const spinnerColor = variant === 'primary' || variant === 'danger' ? c.onPrimary : variant === 'gold' ? '#1A1500' : c.primary;
+
   return (
     <AnimatedPressable
-      style={[
-        animatedStyle,
-        styles.base,
-        getVariantStyle(),
-        getSizeStyle(),
-        fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
-      ]}
+      style={[animatedStyle, styles.base, getVariantStyle(), getSizeStyle(), fullWidth && styles.fullWidth, isDisabled && styles.disabled]}
       onPress={handlePress}
       onPressIn={() => {
         scale.value = withTiming(0.96, { duration: Animation.fast });
-        opacity.value = withTiming(0.9, { duration: Animation.fast });
+        opacity.value = withTiming(0.92, { duration: Animation.fast });
       }}
       onPressOut={() => {
         scale.value = withSpring(1, Animation.spring);
@@ -131,19 +119,14 @@ export function Button({
       accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' || variant === 'danger' || variant === 'gold' ? c.onPrimary : c.primary}
-          size="small"
-        />
+        <ActivityIndicator color={spinnerColor} size="small" />
       ) : (
         <View style={styles.row}>
-          {iconName && iconPosition === 'left' && (
-            <Ionicons name={iconName} size={Typography.md + 2} color={getTextColor()} />
-          )}
-          <Text style={[styles.text, { color: getTextColor() }, getTextSizeStyle(size)]}>{label}</Text>
-          {iconName && iconPosition === 'right' && (
-            <Ionicons name={iconName} size={Typography.md + 2} color={getTextColor()} />
-          )}
+          {iconName && iconPosition === 'left' ? <Ionicons name={iconName} size={18} color={getTextColor()} /> : null}
+          <Text style={[styles.text, { color: getTextColor() }, getTextSizeStyle(size)]} numberOfLines={1}>
+            {label}
+          </Text>
+          {iconName && iconPosition === 'right' ? <Ionicons name={iconName} size={18} color={getTextColor()} /> : null}
         </View>
       )}
     </AnimatedPressable>
@@ -153,13 +136,13 @@ export function Button({
 function getTextSizeStyle(size: ButtonSize): any {
   switch (size) {
     case 'sm':
-      return { fontSize: 12 };
+      return { fontSize: Typography.sm, letterSpacing: LetterSpacing.wide };
     case 'md':
-      return { fontSize: 14 };
+      return { fontSize: Typography.base, letterSpacing: LetterSpacing.wide };
     case 'lg':
-      return { fontSize: 16 };
+      return { fontSize: Typography.md, letterSpacing: LetterSpacing.wide };
     case 'xl':
-      return { fontSize: 18 };
+      return { fontSize: Typography.lg, letterSpacing: LetterSpacing.wide };
   }
 }
 
@@ -171,15 +154,14 @@ const makeStyles = (c: Palette) =>
       borderRadius: Radius.button,
       flexDirection: 'row',
     },
-    // Variantes premium
     primary: {
       backgroundColor: c.primary,
       ...Shadow.md,
     },
     secondary: {
-      backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: c.primary,
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.border,
     },
     ghost: {
       backgroundColor: 'transparent',
@@ -194,26 +176,20 @@ const makeStyles = (c: Palette) =>
     },
     outline: {
       backgroundColor: 'transparent',
-      borderWidth: 2,
+      borderWidth: 1.8,
       borderColor: c.primary,
     },
-    // Tamaños — min 44px per DESIGN_SYSTEM §62
-    sizeSm: { minHeight: 44, paddingHorizontal: Spacing.md },
-    sizeMd: { minHeight: 52, paddingHorizontal: Spacing.lg },
-    sizeLg: { minHeight: 58, paddingHorizontal: Spacing.xl },
-    sizeXl: { minHeight: 64, paddingHorizontal: Spacing.xxl },
+    sizeSm: { minHeight: 44, paddingHorizontal: Spacing.md, minWidth: 88 },
+    sizeMd: { minHeight: 52, paddingHorizontal: Spacing.lg, minWidth: 120 },
+    sizeLg: { minHeight: 56, paddingHorizontal: Spacing.xl, minWidth: 140 },
+    sizeXl: { minHeight: 64, paddingHorizontal: Spacing.xxl, minWidth: 160 },
     fullWidth: { alignSelf: 'stretch', width: '100%' },
-    disabled: { opacity: 0.4 },
+    disabled: { opacity: 0.45 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: Spacing.xs,
     },
-    // Textos
-    text: { fontWeight: FontWeight.semibold, letterSpacing: LetterSpacing.wide, textAlign: 'center' },
-    textSm: { fontSize: Typography.sm },
-    textMd: { fontSize: Typography.base },
-    textLg: { fontSize: Typography.md },
-    textXl: { fontSize: Typography.lg },
+    text: { fontWeight: FontWeight.semibold as any, textAlign: 'center', flexShrink: 1 },
   });

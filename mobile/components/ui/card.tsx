@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, View, ViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
 import { Radius, Shadow, Spacing } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
@@ -12,14 +11,7 @@ interface CardProps extends ViewProps {
   children: React.ReactNode;
 }
 
-export function Card({
-  children,
-  onPress,
-  variant = 'bordered',
-  padding = Spacing.md,
-  style,
-  ...rest
-}: CardProps) {
+export function Card({ children, onPress, variant = 'bordered', padding = Spacing.md, style, ...rest }: CardProps) {
   const c = usePalette();
   const styles = makeStyles(c);
 
@@ -40,23 +32,19 @@ export function Card({
     }
   };
 
-  const Content = ({ style: contentStyle }: { style?: any }) => (
-    <View style={[styles.content, { padding }, contentStyle]}>{children}</View>
+  const ContentView = ({ extraStyle }: { extraStyle?: any }) => (
+    <View style={[styles.content, { padding }, extraStyle]}>{children}</View>
   );
 
   if (onPress) {
     return (
       <Pressable
-        style={({ pressed }) => [
-          styles.base,
-          getVariantStyle(),
-          pressed && styles.pressed,
-          style,
-        ]}
+        style={({ pressed }) => [styles.base, getVariantStyle(), pressed && styles.pressed, style]}
         onPress={onPress}
+        accessibilityRole="button"
         {...rest}
       >
-        <Content />
+        <ContentView />
       </Pressable>
     );
   }
@@ -69,7 +57,7 @@ export function Card({
         end={{ x: 1, y: 1 }}
         style={[styles.base, getVariantStyle(), style]}
       >
-        <Content />
+        <ContentView extraStyle={{ padding }} />
       </LinearGradient>
     );
   }
@@ -82,22 +70,14 @@ export function Card({
         end={{ x: 1, y: 1 }}
         style={[styles.base, getVariantStyle(), style]}
       >
-        <Content />
+        <ContentView extraStyle={{ padding }} />
       </LinearGradient>
     );
   }
 
-  if (variant === 'glass') {
-    return (
-      <View style={[styles.base, getVariantStyle(), style]} {...rest}>
-        <Content />
-      </View>
-    );
-  }
-
   return (
-    <View style={[styles.base, getVariantStyle(), { padding }, style]} {...rest}>
-      {children}
+    <View style={[styles.base, getVariantStyle(), style]} {...rest}>
+      <ContentView />
     </View>
   );
 }
@@ -107,10 +87,9 @@ const makeStyles = (c: Palette) =>
     base: {
       borderRadius: Radius.card,
       backgroundColor: c.surface,
+      overflow: 'hidden',
     },
-    content: {
-      // padding applied via prop
-    },
+    content: {},
     bordered: {
       borderWidth: 1,
       borderColor: c.borderSubtle,
@@ -118,10 +97,14 @@ const makeStyles = (c: Palette) =>
     },
     elevated: {
       backgroundColor: c.surfaceElevated,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
       ...Shadow.md,
     },
     flat: {
       backgroundColor: c.primarySofter,
+      borderWidth: 1,
+      borderColor: c.borderSubtle,
     },
     glass: {
       backgroundColor: c.surfaceGlass,
@@ -130,13 +113,15 @@ const makeStyles = (c: Palette) =>
       ...Shadow.sm,
     },
     gradient: {
+      borderWidth: 0,
       ...Shadow.lg,
     },
     premium: {
+      borderWidth: 0,
       ...Shadow.xl,
     },
     pressed: {
-      opacity: 0.85,
-      transform: [{ scale: 0.99 }],
+      opacity: 0.88,
+      transform: [{ scale: 0.985 }],
     },
   });

@@ -2,33 +2,32 @@ import { StyleSheet, Text, View } from 'react-native';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
 import { FontWeight, Typography } from '@/constants/tokens';
+import { formatMoneyCop, formatCompactCop } from '@/utils/money';
 
 interface MoneyDisplayProps {
   value: string | number;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
-  tone?: 'neutral' | 'positive' | 'negative' | 'warning' | 'primary' | 'success' | 'danger' | 'inverse';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'hero';
+  tone?: 'neutral' | 'positive' | 'negative' | 'warning' | 'primary' | 'success' | 'danger' | 'inverse' | 'muted';
   showCurrency?: boolean;
-  currency?: string;
   compact?: boolean;
   weight?: keyof typeof FontWeight;
   letterSpacing?: number;
   prefix?: string;
   suffix?: string;
+  // Si true, el valor ya viene formateado (ej: formatMoneyCop) — no re-formatear
+  alreadyFormatted?: boolean;
 }
 
-const CURRENCY_SYMBOL = '$';
+const sizeMap: Record<string, number> = {
+  xs: Typography.sm,
+  sm: Typography.base,
+  md: Typography.md,
+  lg: Typography.lg,
+  xl: Typography.xl,
+  hero: Typography.hero,
+};
 
-function formatCompact(value: string): string {
-  const num = parseFloat(value.replace(/[^0-9.-]/g, ''));
-  if (num >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(1)}B`;
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return value;
-}
-
-type FontWeightValue = '400' | '500' | '600' | '700' | '800' | '900';
-
-const weightMap: Record<string, FontWeightValue> = {
+const weightMap: Record<string, string> = {
   regular: '400',
   medium: '500',
   semibold: '600',
@@ -37,76 +36,91 @@ const weightMap: Record<string, FontWeightValue> = {
   black: '900',
 };
 
-const sizeMap = {
-  sm: Typography.sm,
-  md: Typography.base,
-  lg: Typography.lg,
-  xl: Typography.xl,
-  hero: Typography.hero,
-};
-
 export function MoneyDisplay({
   value,
   size = 'md',
   tone = 'neutral',
   showCurrency = true,
-  currency = 'COP',
   compact = false,
   weight,
   letterSpacing,
   prefix = '',
   suffix = '',
+  alreadyFormatted = false,
 }: MoneyDisplayProps) {
   const c = usePalette();
   const styles = makeStyles(c);
 
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  const isNegative = numValue < 0;
-  const displayValue = compact ? formatCompact(String(value)) : String(value);
+  const rawStr = String(value);
+  const isHidden = rawStr.includes('•');
+  const isNegative = !isHidden && (rawStr.trim().startsWith('-') || (typeof value === 'number' && value < 0));
+
+  let displayValue: string;
+  if (isHidden) {
+    displayValue = rawStr;
+  } else if (alreadyFormatted) {
+    displayValue = rawStr;
+  } else if (compact) {
+    displayValue = formatCompactCop(rawStr);
+    // compact ya incluye símbolo, evitar duplicado
+    showCurrency = false as any;
+  } else {
+    // Detectar si es número/money string y formatear con separadores
+    const num = Number(rawStr.replace(/[^0-9.-]/g, ''));
+    if (!Number.isNaN(num) && rawStr.trim() !== '' && /^[\d\s.,$+-]+$/.test(rawStr)) {
+      displayValue = formatMoneyCop(String(Math.abs(num)));
+      if (isNegative) displayValue = displayValue.replace('$', '$ −');
+    } else {
+      displayValue = rawStr;
+    }
+  }
 
   const resolvedTone = isNegative ? 'negative' : tone;
-
   const color =
     resolvedTone === 'positive' || resolvedTone === 'success'
       ? c.success
       : resolvedTone === 'negative' || resolvedTone === 'danger'
-      ? c.danger
-      : resolvedTone === 'warning'
-      ? c.warning
-      : resolvedTone === 'primary'
-      ? c.primary
-      : resolvedTone === 'inverse'
-      ? c.textInverse
-      : c.text;
+        ? c.danger
+        : resolvedTone === 'warning'
+          ? c.warning
+          : resolvedTone === 'primary'
+            ? c.primary
+            : resolvedTone === 'inverse'
+              ? c.textInverse
+              : resolvedTone === 'muted'
+                ? c.textMuted
+                : c.text;
 
-  const resolvedWeight = (weight ?? (size === 'hero' ? 'black' : 'extrabold')) as keyof typeof FontWeight;
+  const resolvedWeight = (weight ?? (size === 'hero' ? 'black' : size === 'xl' ? 'extrabold' : 'bold')) as keyof typeof FontWeight;
+  const fontSize = sizeMap[size] ?? Typography.md;
+
+  // Si showCurrency y no compact, el formatMoneyCop ya trae $ — no duplicar
+  const needsCurrencyChip = showCurrency && !displayValue.includes('$') && !isHidden;
+  const currencyOpacity = size === 'hero' ? 0.85 : 0.65;
 
   return (
-    <View style={styles.container}>
-      {showCurrency && (
-        <Text
-          style={[
-            styles.currency,
-            { fontSize: sizeMap[size] * 0.6, color: c.textMuted },
-          ]}
-        >
-          {CURRENCY_SYMBOL}
+    <View style={styles.container} accessible accessibilityLabel={`${prefix}${displayValue}${suffix}`}>
+      {needsCurrencyChip ? (
+        <Text style={[styles.currency, { fontSize: fontSize * 0.52, color: resolvedTone === 'inverse' ? 'rgba(255,255,255,0.9)' : c.textMuted, opacity: currencyOpacity }]}>
+          $
         </Text>
-      )}
+      ) : null}
       <Text
         style={[
           styles.value,
           {
-            fontSize: sizeMap[size],
-            color,
-            fontWeight: weightMap[resolvedWeight],
-            letterSpacing: letterSpacing ?? (size === 'hero' ? -1 : -0.3),
+            fontSize,
+            color: isHidden ? color : color,
+            fontWeight: weightMap[resolvedWeight] as any,
+            letterSpacing: letterSpacing ?? (size === 'hero' ? -1.2 : size === 'xl' ? -0.8 : -0.3),
+            opacity: isHidden ? 0.55 : 1,
           },
         ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
       >
         {prefix}
-        {isNegative && !displayValue.startsWith('-') ? '−' : ''}
-        {displayValue.replace('-', '')}
+        {displayValue}
         {suffix}
       </Text>
     </View>
@@ -118,13 +132,14 @@ const makeStyles = (c: Palette) =>
     container: {
       flexDirection: 'row',
       alignItems: 'flex-end',
-      gap: 2,
+      gap: 3,
+      flexShrink: 1,
     },
     currency: {
       fontWeight: FontWeight.semibold,
-      marginBottom: 2,
+      marginBottom: 3,
     },
     value: {
-      fontFamily: undefined,
+      flexShrink: 1,
     },
   });

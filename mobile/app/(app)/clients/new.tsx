@@ -2,16 +2,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView , useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { FormInput } from '@/components/form-input';
-import { Radius, Spacing } from '@/constants/tokens';
+import { FontWeight, Radius, Shadow, Spacing, Typography } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
 import { clientFormSchema, type ClientFormData } from '@/features/clients/schemas';
 import { useCreateClient } from '@/features/clients/queries';
-import { ApiError } from '@/services/api/client';
+import { getErrorMessage } from '@/utils/errors-es';
 
 export default function NewClientScreen() {
   const c = usePalette();
@@ -26,14 +28,7 @@ export default function NewClientScreen() {
     formState: { errors, isSubmitting },
   } = useForm<ClientFormData>({
     resolver: zodResolver(clientFormSchema),
-    defaultValues: {
-      full_name: '',
-      document_number: '',
-      phone: '',
-      alternative_phone: '',
-      email: '',
-      address: '',
-    },
+    defaultValues: { full_name: '', phone: '' },
   });
 
   const onSubmit = handleSubmit(async (values) => {
@@ -41,118 +36,101 @@ export default function NewClientScreen() {
     try {
       await createClient.mutateAsync({
         full_name: values.full_name,
-        document_number: values.document_number || null,
-        phone: values.phone || null,
-        alternative_phone: values.alternative_phone || null,
-        email: values.email || null,
-        address: values.address || null,
+        phone: values.phone,
+        document_number: null,
+        alternative_phone: null,
+        email: null,
+        address: null,
       });
       router.back();
     } catch (error) {
-      setServerError(
-        error instanceof ApiError ? error.message : 'Unexpected error. Please try again.'
-      );
+      setServerError(getErrorMessage(error));
     }
   });
 
+  const loading = isSubmitting || createClient.isPending;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={[{ paddingBottom: Spacing.xl }, styles.container]} keyboardShouldPersistTaps="handled">
-        <Controller
-          control={control}
-          name="full_name"
-          render={({ field: { onChange, value } }) => (
-            <FormInput
-              label="Nombre completo *"
-              value={value}
-              onChangeText={onChange}
-              autoCapitalize="words"
-              error={errors.full_name?.message}
-            />
-          )}
-        />
-        <Controller
-          control={control}
-          name="document_number"
-          render={({ field: { onChange, value } }) => (
-            <FormInput
-              label="Documento"
-              value={value ?? ''}
-              onChangeText={onChange}
-              keyboardType="numbers-and-punctuation"
-              error={errors.document_number?.message}
-            />
-          )}
-        />
-        <View style={styles.row}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
+          <Ionicons name="chevron-back" size={22} color={c.text} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Nuevo cliente</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + Spacing.xxl }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.heroBox, { backgroundColor: c.primarySoft }]}>
+          <LinearGradient colors={c.primaryGradient} style={styles.heroAvatar}>
+            <Ionicons name="person" size={32} color="#FFF" />
+          </LinearGradient>
+          <Text style={[styles.heroTitle, { color: c.primary }]}>Información del cliente</Text>
+          <Text style={[styles.heroSubtitle, { color: c.textMuted }]}>Nombre y teléfono son obligatorios</Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.borderSubtle }]}>
+          <Controller
+            control={control}
+            name="full_name"
+            render={({ field: { onChange, value } }) => (
+              <FormInput
+                label="Nombre completo"
+                value={value}
+                onChangeText={onChange}
+                autoCapitalize="words"
+                autoComplete="name"
+                placeholder="Ej: María González"
+                leftIcon="person-outline"
+                error={errors.full_name?.message}
+              />
+            )}
+          />
           <Controller
             control={control}
             name="phone"
             render={({ field: { onChange, value } }) => (
               <FormInput
                 label="Teléfono"
-                value={value ?? ''}
+                value={value}
                 onChangeText={onChange}
                 keyboardType="phone-pad"
+                autoComplete="tel"
+                placeholder="Ej: 3001234567"
+                leftIcon="call-outline"
                 error={errors.phone?.message}
               />
             )}
           />
-          <Controller
-            control={control}
-            name="alternative_phone"
-            render={({ field: { onChange, value } }) => (
-              <FormInput
-                label="Tel. alterno"
-                value={value ?? ''}
-                onChangeText={onChange}
-                keyboardType="phone-pad"
-                error={errors.alternative_phone?.message}
-              />
-            )}
-          />
         </View>
-        <Controller
-          control={control}
-          name="email"
-          render={({ field: { onChange, value } }) => (
-            <FormInput
-              label="Correo"
-              value={value ?? ''}
-              onChangeText={onChange}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              error={errors.email?.message}
-            />
-          )}
-        />
-        <Controller
-          control={control}
-          name="address"
-          render={({ field: { onChange, value } }) => (
-            <FormInput
-              label="Dirección"
-              value={value ?? ''}
-              onChangeText={onChange}
-              error={errors.address?.message}
-            />
-          )}
-        />
 
-        {serverError ? <Text style={styles.serverError}>{serverError}</Text> : null}
+        {serverError ? (
+          <View style={[styles.errorBox, { backgroundColor: c.dangerSoft, borderColor: c.danger + '30' }]}>
+            <Ionicons name="alert-circle" size={16} color={c.danger} />
+            <Text style={[styles.errorText, { color: c.danger }]}>{serverError}</Text>
+          </View>
+        ) : null}
 
         <Pressable
-          style={[styles.submitButton, isSubmitting && styles.disabled]}
+          style={({ pressed }) => [styles.submitBtn, { opacity: pressed || loading ? 0.82 : 1 }]}
           onPress={() => void onSubmit()}
-          disabled={isSubmitting || createClient.isPending}
+          disabled={loading}
         >
-          {isSubmitting || createClient.isPending ? (
-            <ActivityIndicator color={c.onPrimary} />
-          ) : (
-            <Text style={styles.submitText}>Guardar cliente</Text>
-          )}
+          <LinearGradient colors={c.primaryGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
+            {loading ? (
+              <ActivityIndicator color="#FFF" size="small" />
+            ) : (
+              <>
+                <Ionicons name="person-add" size={20} color="#FFF" />
+                <Text style={styles.submitText}>Guardar cliente</Text>
+              </>
+            )}
+          </LinearGradient>
         </Pressable>
-        <Text style={styles.hint}>Solo el nombre es obligatorio.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -160,18 +138,19 @@ export default function NewClientScreen() {
 
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: c.background },
-  container: { padding: Spacing.md, gap: Spacing.md },
-  row: { flexDirection: 'row', gap: Spacing.sm },
-  serverError: { color: c.danger, textAlign: 'center' },
-  submitButton: {
-    backgroundColor: c.primary,
-    borderRadius: Radius.button,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabled: { opacity: 0.6 },
-  submitText: { color: c.onPrimary, fontWeight: '600', fontSize: 16 },
-  hint: { textAlign: 'center', fontSize: 12, opacity: c.mutedOpacity },
-});;
+    safeArea: { flex: 1, backgroundColor: c.background },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+    backBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface, borderWidth: 1, borderColor: c.borderSubtle },
+    headerTitle: { fontSize: Typography.lg, fontWeight: FontWeight.black as any, color: c.text },
+    container: { paddingHorizontal: Spacing.md, paddingTop: Spacing.sm, gap: Spacing.md },
+    heroBox: { borderRadius: Radius.cardLg, padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm },
+    heroAvatar: { width: 72, height: 72, borderRadius: 999, alignItems: 'center', justifyContent: 'center', ...Shadow.lg },
+    heroTitle: { fontSize: Typography.lg, fontWeight: FontWeight.black as any },
+    heroSubtitle: { fontSize: Typography.sm },
+    card: { borderRadius: Radius.card, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, ...Shadow.sm },
+    errorBox: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, borderRadius: Radius.md, padding: Spacing.md, borderWidth: 1 },
+    errorText: { fontSize: Typography.sm, fontWeight: FontWeight.medium as any, flex: 1 },
+    submitBtn: { borderRadius: Radius.button, overflow: 'hidden', ...Shadow.lg },
+    submitGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, minHeight: 54 },
+    submitText: { color: '#FFF', fontSize: Typography.md, fontWeight: FontWeight.black as any },
+  });

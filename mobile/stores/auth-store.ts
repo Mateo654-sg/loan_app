@@ -3,12 +3,10 @@ import { create } from 'zustand';
 import type { UserDto } from '@/types/api';
 
 interface AuthState {
-  /** Null until the persisted session has been loaded from secure storage. */
   hydrated: boolean;
   user: UserDto | null;
   accessToken: string | null;
   refreshToken: string | null;
-
   markHydrated: () => void;
   setSession: (payload: { user: UserDto | null; accessToken: string; refreshToken: string | null }) => void;
   setAccessToken: (accessToken: string) => void;
@@ -16,21 +14,18 @@ interface AuthState {
 }
 
 /**
- * Client-side authentication state only. It stores tokens and the user
- * profile returned by the backend; it never computes financial values
- * and never decides authorization by itself (SECURITY.md §47–49).
+ * Estado de autenticación cliente. Solo guarda tokens y perfil del backend;
+ * nunca calcula valores financieros ni decide autorización (SECURITY.md §47–49).
  */
 export const useAuthStore = create<AuthState>((set) => ({
   hydrated: false,
   user: null,
   accessToken: null,
   refreshToken: null,
-
   markHydrated: () => set({ hydrated: true }),
-  setSession: ({ user, accessToken, refreshToken }) =>
-    set({ user, accessToken, refreshToken, hydrated: true }),
+  setSession: ({ user, accessToken, refreshToken }) => set({ user, accessToken, refreshToken, hydrated: true }),
   setAccessToken: (accessToken) => set({ accessToken }),
-  clearSession: () => set({ user: null, accessToken: null, refreshToken: null }),
+  clearSession: () => set({ user: null, accessToken: null, refreshToken: null, hydrated: true }),
 }));
 
 export function getAuthTokens() {

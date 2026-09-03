@@ -45,10 +45,10 @@ const installmentColors = (c: Palette): Record<string, string> => ({
 });
 
 const METHODS = [
-  { value: 'CASH', label: 'Cash' },
-  { value: 'BANK_TRANSFER', label: 'Transfer' },
-  { value: 'CARD', label: 'Card' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'CASH', label: 'Efectivo' },
+  { value: 'BANK_TRANSFER', label: 'Transferencia' },
+  { value: 'CARD', label: 'Tarjeta' },
+  { value: 'OTHER', label: 'Otro' },
 ] as const;
 
 export default function LoanDetailScreen() {
@@ -76,17 +76,17 @@ function InstallmentCard({ installment }: { installment: InstallmentDto }) {
         </Text>
       </View>
       <View style={styles.metricRow}>
-        <Text style={styles.metricLabel}>Total due</Text>
+        <Text style={styles.metricLabel}>Total cuota</Text>
         <Text style={styles.metricValue}>{formatMoneyCop(installment.total_due)}</Text>
       </View>
       <View style={styles.metricRow}>
-        <Text style={styles.metricLabel}>Remaining</Text>
+        <Text style={styles.metricLabel}>Pendiente</Text>
         <Text style={[styles.metricValue, { color: c.danger }]}>
           {formatMoneyCop(installment.remaining_balance)}
         </Text>
       </View>
       {paid > 0 ? (
-        <Text style={styles.note}>{formatMoneyCop(String(paid))} already paid</Text>
+        <Text style={styles.note}>{formatMoneyCop(String(paid))} ya pagado</Text>
       ) : null}
     </View>
   );

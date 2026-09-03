@@ -30,47 +30,20 @@ export function FormInput({
   const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const styles = makeStyles(c);
-
   const isPassword = Boolean(secureTextEntry);
   const isSecure = isPassword && !showPassword;
-
-  // Animated border width
   const borderWidth = useSharedValue(1.5);
-  const animatedBorderWidth = useAnimatedStyle(() => ({
-    borderWidth: borderWidth.value,
-  }));
+  const animatedBorder = useAnimatedStyle(() => ({ borderWidth: borderWidth.value }));
 
-  // Animated label color
-  const labelAnimatedStyle = useAnimatedStyle(() => ({
-    color: focused ? c.primary : error ? c.danger : c.textMuted,
-  }));
-
-  // Animated error opacity
-  const errorAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: error ? 1 : 0,
-  }));
+  const borderColor = error ? c.danger : focused ? c.primary : c.border;
+  const labelColor = error ? c.danger : focused ? c.primary : c.textMuted;
+  const iconColor = error ? c.danger : focused ? c.primary : c.textMuted;
 
   return (
     <View style={styles.container}>
-      <Animated.Text
-        style={[
-          styles.label,
-          focused && styles.labelFocused,
-          error && styles.labelError,
-          labelAnimatedStyle,
-        ]}
-      >
-        {label}
-      </Animated.Text>
-      <Animated.View style={[styles.inputWrapper, animatedBorderWidth]}>
-        {leftIcon ? (
-          <Ionicons
-            name={leftIcon}
-            size={20}
-            color={error ? c.danger : focused ? c.primary : c.textMuted}
-            style={styles.leftIcon}
-          />
-        ) : null}
+      <Animated.Text style={[styles.label, { color: labelColor }]}>{label}</Animated.Text>
+      <Animated.View style={[styles.inputWrapper, animatedBorder, { borderColor, backgroundColor: c.surface }]}>
+        {leftIcon ? <Ionicons name={leftIcon} size={19} color={iconColor} style={styles.leftIcon} /> : null}
         <TextInput
           style={styles.input}
           placeholderTextColor={c.textSubtle}
@@ -91,33 +64,19 @@ export function FormInput({
           {...inputProps}
         />
         {isPassword ? (
-          <Pressable
-            onPress={() => setShowPassword((prev) => !prev)}
-            style={styles.rightIconButton}
-            hitSlop={8}
-          >
-            <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
-              color={focused ? c.primary : c.textMuted}
-            />
+          <Pressable onPress={() => setShowPassword((p) => !p)} style={styles.rightIconButton} hitSlop={8} accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+            <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={iconColor} />
           </Pressable>
         ) : rightIcon ? (
-          <Pressable
-            onPress={onRightIconPress}
-            style={styles.rightIconButton}
-            hitSlop={8}
-          >
-            <Ionicons name={rightIcon} size={20} color={focused ? c.primary : c.textMuted} />
+          <Pressable onPress={onRightIconPress} style={styles.rightIconButton} hitSlop={8} accessibilityRole="button">
+            <Ionicons name={rightIcon} size={20} color={iconColor} />
           </Pressable>
         ) : null}
       </Animated.View>
       {error ? (
-        <View style={styles.errorRow}>
-          <Ionicons name="alert-circle-outline" size={14} color={c.danger} />
-          <Animated.Text style={[styles.error, errorAnimatedStyle]}>
-            {error}
-          </Animated.Text>
+        <View style={styles.errorRow} accessibilityLiveRegion="polite">
+          <Ionicons name="alert-circle" size={14} color={c.danger} />
+          <Text style={[styles.error, { color: c.danger }]}>{error}</Text>
         </View>
       ) : hint ? (
         <Text style={styles.hint}>{hint}</Text>
@@ -128,58 +87,43 @@ export function FormInput({
 
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
-    container: {
-      gap: Spacing.xs,
-    },
+    container: { gap: Spacing.xs },
     label: {
-      fontSize: Typography.base,
-      fontWeight: FontWeight.semibold,
-      color: c.textMuted,
-      letterSpacing: 0.1,
-    },
-    labelFocused: {
-      color: c.primary,
-    },
-    labelError: {
-      color: c.danger,
+      fontSize: Typography.sm,
+      fontWeight: FontWeight.semibold as any,
+      letterSpacing: 0.2,
     },
     inputWrapper: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderWidth: 1.5,
-      borderColor: c.border,
       borderRadius: Radius.input,
-      backgroundColor: c.surface,
       minHeight: 54,
       paddingHorizontal: Spacing.md,
       ...Shadow.xs,
     },
-    leftIcon: {
-      marginRight: Spacing.sm,
-    },
-    rightIconButton: {
-      padding: 4,
-      marginLeft: Spacing.xs,
-    },
+    leftIcon: { marginRight: Spacing.sm },
+    rightIconButton: { padding: 4, marginLeft: Spacing.xs },
     input: {
       flex: 1,
       fontSize: Typography.md,
       color: c.text,
-      paddingVertical: 14,
+      paddingVertical: 13,
+      textAlignVertical: 'center' as any,
     },
     errorRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 4,
+      gap: 5,
       marginTop: 2,
     },
     error: {
       fontSize: Typography.sm,
-      color: c.danger,
-      fontWeight: FontWeight.medium,
+      fontWeight: FontWeight.medium as any,
+      flex: 1,
     },
     hint: {
       fontSize: Typography.sm,
       color: c.textMuted,
+      marginTop: 1,
     },
   });

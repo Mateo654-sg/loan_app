@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Radius, Shadow, Typography } from '@/constants/tokens';
+import { Shadow } from '@/constants/tokens';
 import { usePalette } from '@/hooks/use-palette';
 import type { Palette } from '@/theme/palette';
 
@@ -10,77 +10,59 @@ interface AvatarProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'default' | 'gradient' | 'ring';
   onPress?: () => void;
-  imageUri?: string;
 }
 
+// Paleta curada premium — nunca neón, siempre índigo/violeta/dorado
+const PALETTE_COLORS: [string, string][] = [
+  ['#3B2FBC', '#5A4FE8'],
+  ['#7C3AED', '#A855F7'],
+  ['#0D9668', '#10B981'],
+  ['#C9A84C', '#E8C85A'],
+  ['#2563EB', '#60A5FA'],
+  ['#B45309', '#F59E0B'],
+  ['#BE123C', '#FB7185'],
+  ['#0E7490', '#22D3EE'],
+];
+
 const SIZE_MAP = {
-  xs: { size: 28, fontSize: 10, ringWidth: 1.5 },
-  sm: { size: 36, fontSize: 12, ringWidth: 2 },
-  md: { size: 44, fontSize: 14, ringWidth: 2 },
-  lg: { size: 56, fontSize: 18, ringWidth: 2.5 },
-  xl: { size: 72, fontSize: 24, ringWidth: 3 },
+  xs: { size: 28, fontSize: 10 },
+  sm: { size: 36, fontSize: 12 },
+  md: { size: 44, fontSize: 14 },
+  lg: { size: 56, fontSize: 18 },
+  xl: { size: 72, fontSize: 24 },
 };
 
-export function Avatar({
-  name,
-  size = 'md',
-  variant = 'default',
-  onPress,
-  imageUri,
-}: AvatarProps) {
+export function Avatar({ name, size = 'md', variant = 'default', onPress }: AvatarProps) {
   const c = usePalette();
   const styles = makeStyles(c);
-  const sizeConfig = SIZE_MAP[size];
+  const cfg = SIZE_MAP[size];
 
   const initials = name
     .split(' ')
+    .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
+    .join('') || '•';
 
-  const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const hue = (hash * 137) % 360;
-  const bgColor = `hsl(${hue}, 65%, 52%)`;
-
-  const gradientColors = [
-    `hsl(${hue}, 65%, 52%)`,
-    `hsl(${(hue + 30) % 360}, 65%, 48%)`,
-    `hsl(${(hue + 60) % 360}, 70%, 45%)`,
-  ] as const;
+  const hash = name.split('').reduce((acc, ch) => acc + ch.charCodeAt(0) * 31, 0);
+  const paletteIndex = Math.abs(hash) % PALETTE_COLORS.length;
+  const gradient = PALETTE_COLORS[paletteIndex];
 
   const Content = () => (
-    <View style={[styles.content, { width: sizeConfig.size, height: sizeConfig.size, borderRadius: sizeConfig.size / 2 }]}>
-      {imageUri ? (
-        <View style={styles.imagePlaceholder}>
-          <Text style={{ fontSize: sizeConfig.fontSize, color: c.onPrimary }}>📷</Text>
-        </View>
-      ) : (
-        <Text
-          style={[
-            styles.initials,
-            {
-              fontSize: sizeConfig.fontSize,
-              fontWeight: '800',
-              color: c.onPrimary,
-            },
-          ]}
-        >
-          {initials}
-        </Text>
-      )}
+    <View style={[styles.content, { width: cfg.size, height: cfg.size, borderRadius: cfg.size / 2 }]}>
+      <Text style={[styles.initials, { fontSize: cfg.fontSize }]} numberOfLines={1}>
+        {initials}
+      </Text>
     </View>
   );
 
   if (variant === 'gradient') {
     return (
       <LinearGradient
-        colors={gradientColors}
+        colors={gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[
-          styles.gradientWrapper,
-          { width: sizeConfig.size, height: sizeConfig.size, borderRadius: sizeConfig.size / 2 },
-        ]}
+        style={[styles.gradientWrapper, { width: cfg.size, height: cfg.size, borderRadius: cfg.size / 2 }]}
       >
         <Content />
       </LinearGradient>
@@ -89,27 +71,28 @@ export function Avatar({
 
   if (variant === 'ring') {
     return (
-      <View
-        style={[
-          styles.ringWrapper,
-          { width: sizeConfig.size, height: sizeConfig.size, borderRadius: sizeConfig.size / 2 },
-        ]}
-      >
-        <View style={styles.ring}>
-          <Content />
-        </View>
+      <View style={[styles.ringWrapper, { width: cfg.size, height: cfg.size, borderRadius: cfg.size / 2 }]}>
+        <LinearGradient
+          colors={gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.ringOuter, { width: cfg.size, height: cfg.size, borderRadius: cfg.size / 2 }]}
+        >
+          <View style={[styles.ringInner, { width: cfg.size - 5, height: cfg.size - 5, borderRadius: (cfg.size - 5) / 2 }]}>
+            <Content />
+          </View>
+        </LinearGradient>
       </View>
     );
   }
 
-  const Wrapper = onPress ? Pressable : View;
+  const Wrapper: any = onPress ? Pressable : View;
   return (
     <Wrapper
-      style={[
-        styles.wrapper,
-        { width: sizeConfig.size, height: sizeConfig.size, borderRadius: sizeConfig.size / 2 },
-      ]}
+      style={[styles.wrapper, { width: cfg.size, height: cfg.size, borderRadius: cfg.size / 2 }]}
       onPress={onPress}
+      accessibilityRole={onPress ? 'button' : 'image'}
+      accessibilityLabel={`Avatar de ${name}`}
     >
       <Content />
     </Wrapper>
@@ -122,39 +105,39 @@ const makeStyles = (c: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: c.primarySoft,
-      borderWidth: 2,
-      borderColor: c.primary + '25',
+      borderWidth: 1.5,
+      borderColor: c.border,
+      overflow: 'hidden',
     },
     gradientWrapper: {
       alignItems: 'center',
       justifyContent: 'center',
       ...Shadow.md,
+      overflow: 'hidden',
     },
     ringWrapper: {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    ring: {
-      width: '100%',
-      height: '100%',
-      borderRadius: 999,
-      backgroundColor: c.surface,
-      borderWidth: 3,
-      borderColor: c.primary,
+    ringOuter: {
       alignItems: 'center',
       justifyContent: 'center',
+      padding: 2.5,
       ...Shadow.sm,
+    },
+    ringInner: {
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
     },
     content: {
       alignItems: 'center',
       justifyContent: 'center',
     },
     initials: {
-      // fontSize applied inline
-    },
-    imagePlaceholder: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
+      fontWeight: '800',
+      color: '#FFFFFF',
+      letterSpacing: -0.3,
     },
   });
